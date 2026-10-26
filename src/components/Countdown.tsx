@@ -4,11 +4,11 @@ import { Clock } from "lucide-react";
 import { timeLeft } from "@/lib/format";
 
 const tone = {
-  urgent: "text-rose-700 bg-rose-50 ring-rose-200",
-  soon: "text-amber-800 bg-amber-50 ring-amber-200",
-  later: "text-emerald-800 bg-emerald-50 ring-emerald-200",
-  closed: "text-slate-500 bg-slate-100 ring-slate-200",
-  unknown: "text-slate-600 bg-slate-50 ring-slate-200",
+  urgent: "text-rose-300 bg-rose-400/10 ring-rose-400/25",
+  soon: "text-amber-300 bg-amber-400/10 ring-amber-400/25",
+  later: "text-lime bg-lime-400/10 ring-lime-400/25",
+  closed: "text-fg/50 bg-white/[0.07] ring-white/10",
+  unknown: "text-fg/65 bg-white/[0.04] ring-white/10",
 };
 
 export function Countdown({ iso, className = "" }: { iso: string | null; className?: string }) {

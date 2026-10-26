@@ -1,10 +1,10 @@
 import type { Status } from "@/lib/types";
 
 const styles: Record<Status, string> = {
-  new: "bg-sky-50 text-sky-700 ring-sky-200",
-  saved: "bg-amber-50 text-amber-800 ring-amber-200",
-  applied: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  rejected: "bg-slate-100 text-slate-500 ring-slate-200",
+  new: "bg-sky-400/10 text-sky-300 ring-sky-400/25",
+  saved: "bg-amber-400/10 text-amber-300 ring-amber-400/25",
+  applied: "bg-lime-400/10 text-lime ring-lime-400/25",
+  rejected: "bg-white/[0.07] text-fg/50 ring-white/10",
 };
 
 export function StatusPill({ status }: { status: Status }) {

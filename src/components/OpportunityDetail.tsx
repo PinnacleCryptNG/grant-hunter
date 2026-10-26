@@ -24,7 +24,7 @@ const FIELDS: { key: keyof Extracted; label: string }[] = [
   { key: "howToApply", label: "How to apply" },
 ];
 
-const sev = { high: "bg-rose-50 text-rose-800 ring-rose-200", medium: "bg-amber-50 text-amber-900 ring-amber-200", low: "bg-paper text-slate-700 ring-ink/10" };
+const sev = { high: "bg-rose-400/10 text-rose-300 ring-rose-400/25", medium: "bg-amber-400/10 text-amber-300 ring-amber-400/25", low: "bg-white/[0.04] text-fg/80 ring-white/[0.08]" };
 
 export function OpportunityDetail({ id }: { id: number }) {
   const [opp, setOpp] = useState<Detail | null>(null);
@@ -106,8 +106,8 @@ export function OpportunityDetail({ id }: { id: number }) {
     setTimeout(() => setCopied(null), 1500);
   }
 
-  if (missing) return <p className="text-sm text-slate-600">Opportunity not found. <Link className="underline" href="/dashboard">Back</Link></p>;
-  if (!opp) return <div className="h-64 animate-pulse rounded-2xl bg-white ring-1 ring-ink/10" />;
+  if (missing) return <p className="text-sm text-fg/65">Opportunity not found. <Link className="underline" href="/dashboard">Back</Link></p>;
+  if (!opp) return <div className="h-64 animate-pulse rounded-2xl bg-surface ring-1 ring-white/[0.08]" />;
 
   const x = opp.extracted;
   const tz = profile?.timezone ?? "UTC";
@@ -116,52 +116,52 @@ export function OpportunityDetail({ id }: { id: number }) {
 
   return (
     <div className="space-y-5">
-      <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-ink">
+      <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-fg/50 hover:text-fg">
         <ArrowLeft className="h-4 w-4" />
         All opportunities
       </Link>
 
-      <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+      <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
         <div className="flex gap-4">
           <ScoreBadge score={opp.score} size={64} />
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-slate-500"><span className="font-medium capitalize text-slate-700">{opp.kind}</span> · {opp.source}</p>
+            <p className="text-xs text-fg/50"><span className="font-medium capitalize text-fg/80">{opp.kind}</span> · {opp.source}</p>
             <h1 className="mt-1 text-xl font-semibold leading-snug sm:text-2xl">{opp.title}</h1>
-            {x.summary && <p className="mt-2 text-sm text-slate-600">{markdownToText(x.summary)}</p>}
+            {x.summary && <p className="mt-2 text-sm text-fg/65">{markdownToText(x.summary)}</p>}
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
           <Countdown iso={opp.deadline_at} />
-          <span className="text-xs text-slate-500" suppressHydrationWarning>{formatDeadline(opp.deadline_at, tz)}{opp.deadline_at && x.deadlineTimezone === "unstated" ? " (page gave no timezone; assumed UTC)" : ""}</span>
+          <span className="text-xs text-fg/50" suppressHydrationWarning>{formatDeadline(opp.deadline_at, tz)}{opp.deadline_at && x.deadlineTimezone === "unstated" ? " (page gave no timezone; assumed UTC)" : ""}</span>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(["new", "saved", "applied", "rejected"] as Status[]).map((s) => (
-            <button key={s} onClick={() => setStatus(s)} aria-pressed={opp.status === s} className={`rounded-xl px-3 py-2 text-sm font-medium ring-1 ${opp.status === s ? "bg-ink text-white ring-ink" : "text-slate-700 ring-ink/10 hover:bg-slate-50"}`}>
+            <button key={s} onClick={() => setStatus(s)} aria-pressed={opp.status === s} className={`rounded-xl px-3 py-2 text-sm font-medium ring-1 ${opp.status === s ? "bg-lime text-night ring-lime" : "text-fg/80 ring-white/[0.08] hover:bg-white/[0.04]"}`}>
               {{ new: "New", saved: "Saved", applied: "Applied", rejected: "Not for me" }[s]}
             </button>
           ))}
         </div>
-        <label className="mt-3 block text-xs font-medium text-slate-500">
+        <label className="mt-3 block text-xs font-medium text-fg/50">
           Note for the agent (why you like or reject this; it learns from it)
           <div className="mt-1 flex gap-2">
-            <input value={feedback} onChange={(e) => setFeedback(e.target.value)} onBlur={saveFeedback} placeholder="e.g. paid in an illiquid token, too much work for the reward" className="w-full rounded-lg border-0 bg-paper px-3 py-2 text-sm text-ink ring-1 ring-ink/10 focus:ring-2 focus:ring-emerald-500" />
+            <input value={feedback} onChange={(e) => setFeedback(e.target.value)} onBlur={saveFeedback} placeholder="e.g. paid in an illiquid token, too much work for the reward" className="w-full rounded-lg border-0 bg-white/[0.04] px-3 py-2 text-sm text-fg ring-1 ring-white/[0.08] focus:ring-2 focus:ring-lime/60" />
           </div>
         </label>
       </section>
 
-      {error && <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-800 ring-1 ring-rose-200">{error}</p>}
+      {error && <p className="rounded-xl bg-rose-400/10 p-3 text-sm text-rose-300 ring-1 ring-rose-400/25">{error}</p>}
 
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-semibold"><Gauge className="h-4 w-4 text-emerald-600" />Why this score</h2>
-              <button onClick={rescore} disabled={!!busy} className="text-xs font-medium text-slate-500 underline-offset-2 hover:underline disabled:opacity-50">{busy === "rescore" ? "Rescoring…" : "Rescore with latest profile"}</button>
+              <h2 className="flex items-center gap-2 font-semibold"><Gauge className="h-4 w-4 text-lime" />Why this score</h2>
+              <button onClick={rescore} disabled={!!busy} className="text-xs font-medium text-fg/50 underline-offset-2 hover:underline disabled:opacity-50">{busy === "rescore" ? "Rescoring…" : "Rescore with latest profile"}</button>
             </div>
-            {opp.scoring?.verdict && <p className="mt-2 text-sm text-slate-700">{opp.scoring.verdict}</p>}
+            {opp.scoring?.verdict && <p className="mt-2 text-sm text-fg/80">{opp.scoring.verdict}</p>}
             <ul className="mt-3 space-y-1.5 text-sm">
-              {plus.map((r, i) => <li key={`p${i}`} className="flex gap-2"><span className="mt-0.5 text-emerald-600">+</span><span>{r.text}</span></li>)}
-              {minus.map((r, i) => <li key={`m${i}`} className="flex gap-2"><span className="mt-0.5 text-rose-600">−</span><span>{r.text}</span></li>)}
+              {plus.map((r, i) => <li key={`p${i}`} className="flex gap-2"><span className="mt-0.5 text-lime">+</span><span>{r.text}</span></li>)}
+              {minus.map((r, i) => <li key={`m${i}`} className="flex gap-2"><span className="mt-0.5 text-rose-400">−</span><span>{r.text}</span></li>)}
             </ul>
             {(opp.scoring?.risks.length ?? 0) > 0 && (
               <>
@@ -176,61 +176,61 @@ export function OpportunityDetail({ id }: { id: number }) {
                 </ul>
               </>
             )}
-            <p className="mt-3 text-[11px] text-slate-400">Scored by {opp.scoring_model ?? "Nemotron"} via Nebius Token Factory</p>
+            <p className="mt-3 text-[11px] text-fg/40">Scored by {opp.scoring_model ?? "Nemotron"} via Nebius Token Factory</p>
           </section>
 
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-semibold"><BrainCircuit className="h-4 w-4 text-emerald-600" />Deep fit analysis</h2>
-              <button onClick={analyze} disabled={!!busy} className="rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+              <h2 className="flex items-center gap-2 font-semibold"><BrainCircuit className="h-4 w-4 text-lime" />Deep fit analysis</h2>
+              <button onClick={analyze} disabled={!!busy} className="rounded-lg bg-lime px-3 py-1.5 text-xs font-semibold text-night disabled:opacity-50">
                 {busy === "analyze" ? "Nemotron Ultra is thinking…" : opp.analysis ? "Re-run" : "Run with Nemotron Ultra"}
               </button>
             </div>
             {opp.analysis ? (
               <div className="mt-3 space-y-3 text-sm">
-                <p><span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${opp.analysis.recommendation === "apply" ? "bg-emerald-100 text-emerald-800" : opp.analysis.recommendation === "skip" ? "bg-rose-100 text-rose-800" : "bg-amber-100 text-amber-900"}`}>{opp.analysis.recommendation}</span>{opp.analysis.summary}</p>
-                {opp.analysis.expectedValueNote && <p className="text-slate-600">{opp.analysis.expectedValueNote}{opp.analysis.effortEstimateHours ? ` (≈${opp.analysis.effortEstimateHours}h effort)` : ""}</p>}
+                <p><span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${opp.analysis.recommendation === "apply" ? "bg-lime-400/15 text-lime" : opp.analysis.recommendation === "skip" ? "bg-rose-400/15 text-rose-300" : "bg-amber-400/15 text-amber-300"}`}>{opp.analysis.recommendation}</span>{opp.analysis.summary}</p>
+                {opp.analysis.expectedValueNote && <p className="text-fg/65">{opp.analysis.expectedValueNote}{opp.analysis.effortEstimateHours ? ` (≈${opp.analysis.effortEstimateHours}h effort)` : ""}</p>}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <List title="Strengths" items={opp.analysis.strengths} />
                   <List title="Gaps" items={opp.analysis.gaps} />
                 </div>
                 <List title="Verify before applying" items={opp.analysis.questionsToVerify} />
-                <p className="text-[11px] text-slate-400">{opp.analysis.model}</p>
+                <p className="text-[11px] text-fg/40">{opp.analysis.model}</p>
               </div>
             ) : (
-              <p className="mt-2 text-sm text-slate-500">Nemotron Ultra reasons over your profile, memory and the verified terms to recommend apply / maybe / skip and what to double-check.</p>
+              <p className="mt-2 text-sm text-fg/50">Nemotron Ultra reasons over your profile, memory and the verified terms to recommend apply / maybe / skip and what to double-check.</p>
             )}
           </section>
 
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
-            <h2 className="flex items-center gap-2 font-semibold"><PenLine className="h-4 w-4 text-emerald-600" />Draft with Nemotron Ultra</h2>
-            <p className="mt-1 text-sm text-slate-500">Written from your profile and portfolio only. Nothing is sent: edit it, approve it, then copy it and submit it yourself.</p>
+          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
+            <h2 className="flex items-center gap-2 font-semibold"><PenLine className="h-4 w-4 text-lime" />Draft with Nemotron Ultra</h2>
+            <p className="mt-1 text-sm text-fg/50">Written from your profile and portfolio only. Nothing is sent: edit it, approve it, then copy it and submit it yourself.</p>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {(["application", "pitch", "tweet"] as const).map((k) => (
-                <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k} className={`rounded-lg px-2 py-1.5 text-sm font-medium capitalize ring-1 ${kind === k ? "bg-ink text-white ring-ink" : "text-slate-700 ring-ink/10"}`}>
+                <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k} className={`rounded-lg px-2 py-1.5 text-sm font-medium capitalize ring-1 ${kind === k ? "bg-lime text-night ring-lime" : "text-fg/80 ring-white/[0.08]"}`}>
                   {k === "tweet" ? "X thread" : k}
                 </button>
               ))}
             </div>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional: what you want to build or emphasise" className="mt-2 w-full rounded-lg border-0 bg-paper px-3 py-2 text-sm ring-1 ring-ink/10 focus:ring-2 focus:ring-emerald-500" />
-            <button onClick={draft} disabled={!!busy} className="mt-2 w-full rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional: what you want to build or emphasise" className="mt-2 w-full rounded-lg border-0 bg-white/[0.04] px-3 py-2 text-sm ring-1 ring-white/[0.08] focus:ring-2 focus:ring-lime/60" />
+            <button onClick={draft} disabled={!!busy} className="mt-2 w-full rounded-xl bg-lime px-4 py-2.5 text-sm font-semibold text-night disabled:opacity-50">
               {busy === "draft" ? <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" /> : <PenLine className="mr-1.5 inline h-4 w-4" />}{busy === "draft" ? "Nemotron Ultra is writing…" : "Write a draft"}
             </button>
             <div className="mt-4 space-y-4">
               {drafts.map((d) => (
-                <article key={d.id} className={`rounded-xl p-4 ring-1 ${d.approved ? "ring-emerald-300" : "ring-ink/10"}`}>
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                <article key={d.id} className={`rounded-xl p-4 ring-1 ${d.approved ? "ring-lime-400/40" : "ring-white/[0.08]"}`}>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-fg/50">
                     <span suppressHydrationWarning>{new Date(d.created_at).toLocaleString()} · {d.model}</span>
                     <div className="flex gap-1">
-                      <button onClick={() => setEditing(editing === d.id ? null : d.id)} className="rounded-md px-2 py-1 ring-1 ring-ink/10">{editing === d.id ? "Done" : "Edit"}</button>
-                      <button onClick={() => updateDraft(d, { approved: !d.approved })} className={`rounded-md px-2 py-1 ring-1 ${d.approved ? "bg-emerald-600 text-white ring-emerald-600" : "ring-ink/10"}`}>{d.approved ? "Approved" : "Approve"}</button>
-                      <button onClick={() => copy(d)} disabled={!d.approved} title={d.approved ? "Copy" : "Approve first"} className="inline-flex items-center gap-1 rounded-md bg-ink px-2 py-1 text-white disabled:opacity-40">{copied === d.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied === d.id ? "Copied" : "Copy"}</button>
+                      <button onClick={() => setEditing(editing === d.id ? null : d.id)} className="rounded-md px-2 py-1 ring-1 ring-white/[0.08]">{editing === d.id ? "Done" : "Edit"}</button>
+                      <button onClick={() => updateDraft(d, { approved: !d.approved })} className={`rounded-md px-2 py-1 ring-1 ${d.approved ? "bg-lime text-night ring-lime" : "ring-white/[0.08]"}`}>{d.approved ? "Approved" : "Approve"}</button>
+                      <button onClick={() => copy(d)} disabled={!d.approved} title={d.approved ? "Copy" : "Approve first"} className="inline-flex items-center gap-1 rounded-md bg-lime px-2 py-1 text-night disabled:opacity-40">{copied === d.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied === d.id ? "Copied" : "Copy"}</button>
                     </div>
                   </div>
                   {editing === d.id ? (
-                    <textarea defaultValue={d.content} rows={16} onBlur={(e) => updateDraft(d, { content: e.target.value })} className="w-full rounded-lg border-0 bg-paper p-3 font-mono text-xs ring-1 ring-ink/10" />
+                    <textarea defaultValue={d.content} rows={16} onBlur={(e) => updateDraft(d, { content: e.target.value })} className="w-full rounded-lg border-0 bg-white/[0.04] p-3 font-mono text-xs ring-1 ring-white/[0.08]" />
                   ) : (
-                    <div className="prose-draft text-sm text-slate-800"><ReactMarkdown>{d.content}</ReactMarkdown></div>
+                    <div className="prose-draft text-sm text-fg"><ReactMarkdown>{d.content}</ReactMarkdown></div>
                   )}
                 </article>
               ))}
@@ -239,41 +239,41 @@ export function OpportunityDetail({ id }: { id: number }) {
         </div>
 
         <aside className="space-y-5 lg:col-span-2">
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
-            <h2 className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4 text-emerald-600" />Verified terms</h2>
-            <p className="mt-1 text-xs text-slate-500">Every value comes with a quote found on the source page. Anything the page doesn&apos;t state is marked unknown.</p>
-            <dl className="mt-3 divide-y divide-slate-100">
+          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
+            <h2 className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4 text-lime" />Verified terms</h2>
+            <p className="mt-1 text-xs text-fg/50">Every value comes with a quote found on the source page. Anything the page doesn&apos;t state is marked unknown.</p>
+            <dl className="mt-3 divide-y divide-white/[0.06]">
               {FIELDS.map(({ key, label }) => {
                 const f = x[key] as Field;
                 return (
                   <div key={key} className="py-2.5">
-                    <dt className="text-xs font-medium text-slate-500">{label}</dt>
-                    <dd className={`mt-0.5 text-sm ${f.value === "unknown" ? "italic text-slate-400" : "text-ink"}`}>{markdownToText(f.value)}</dd>
-                    {f.evidence && <dd className="mt-1 border-l-2 border-slate-200 pl-2 text-xs text-slate-500">“{f.evidence}”</dd>}
+                    <dt className="text-xs font-medium text-fg/50">{label}</dt>
+                    <dd className={`mt-0.5 text-sm ${f.value === "unknown" ? "italic text-fg/40" : "text-fg"}`}>{markdownToText(f.value)}</dd>
+                    {f.evidence && <dd className="mt-1 border-l-2 border-white/[0.06] pl-2 text-xs text-fg/50">“{f.evidence}”</dd>}
                   </div>
                 );
               })}
               <div className="py-2.5">
-                <dt className="text-xs font-medium text-slate-500">Paid in sponsor token</dt>
+                <dt className="text-xs font-medium text-fg/50">Paid in sponsor token</dt>
                 <dd className="mt-0.5 text-sm capitalize">{x.paidInSponsorToken}</dd>
               </div>
               {x.requiredSkills.length > 0 && (
                 <div className="py-2.5">
-                  <dt className="text-xs font-medium text-slate-500">Skills mentioned</dt>
-                  <dd className="mt-1 flex flex-wrap gap-1">{x.requiredSkills.map((s) => <span key={s} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs">{s}</span>)}</dd>
+                  <dt className="text-xs font-medium text-fg/50">Skills mentioned</dt>
+                  <dd className="mt-1 flex flex-wrap gap-1">{x.requiredSkills.map((s) => <span key={s} className="rounded-md bg-white/[0.07] px-1.5 py-0.5 text-xs">{s}</span>)}</dd>
                 </div>
               )}
             </dl>
           </section>
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
-            <h2 className="flex items-center gap-2 font-semibold"><Link2 className="h-4 w-4 text-emerald-600" />Sources</h2>
+          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
+            <h2 className="flex items-center gap-2 font-semibold"><Link2 className="h-4 w-4 text-lime" />Sources</h2>
             <ul className="mt-2 space-y-2 text-sm">
               <li>
-                <a href={opp.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 break-all font-medium text-emerald-700 underline underline-offset-2">{hostOf(opp.url)}<ExternalLink className="h-3.5 w-3.5 shrink-0" /></a>
-                <span className="block break-all text-xs text-slate-500">{opp.url}</span>
+                <a href={opp.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 break-all font-medium text-lime underline underline-offset-2">{hostOf(opp.url)}<ExternalLink className="h-3.5 w-3.5 shrink-0" /></a>
+                <span className="block break-all text-xs text-fg/50">{opp.url}</span>
               </li>
-              {opp.found_by_query && <li className="text-xs text-slate-500">Found by Tavily search: “{opp.found_by_query}”</li>}
-              <li className="text-xs text-slate-500" suppressHydrationWarning>First seen {new Date(opp.created_at).toLocaleString()} · extracted by {opp.model}</li>
+              {opp.found_by_query && <li className="text-xs text-fg/50">Found by Tavily search: “{opp.found_by_query}”</li>}
+              <li className="text-xs text-fg/50" suppressHydrationWarning>First seen {new Date(opp.created_at).toLocaleString()} · extracted by {opp.model}</li>
             </ul>
           </section>
         </aside>
@@ -286,7 +286,7 @@ function List({ title, items }: { title: string; items: string[] }) {
   if (!items?.length) return null;
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-fg/50">{title}</h3>
       <ul className="mt-1 list-disc space-y-1 pl-4">{items.map((i, n) => <li key={n}>{i}</li>)}</ul>
     </div>
   );
