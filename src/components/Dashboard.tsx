@@ -9,6 +9,7 @@ import type { OpportunityRow, Profile, Status } from "@/lib/types";
 import { Countdown } from "./Countdown";
 import { ScoreBadge } from "./ScoreBadge";
 import { StatusPill } from "./StatusPill";
+import { Radar as RadarScope } from "./landing/Radar";
 
 type Filter = "all" | Status;
 type Sort = "score" | "deadline";
@@ -107,25 +108,30 @@ export function Dashboard() {
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-3xl border-glow p-6 text-fg sm:p-7">
-        <div aria-hidden className="grid-bg pointer-events-none absolute inset-0" />
-        <div aria-hidden className="pointer-events-none absolute -right-10 -top-28 h-72 w-72 animate-float rounded-full bg-lime/20 blur-3xl" />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lime">Your hunt</p>
-            <h1 className="mt-1.5 text-2xl font-semibold sm:text-3xl">{profile?.name ? `${profile.name.split(" ")[0]}, here's what fits you` : "Opportunities that fit you"}</h1>
-            <p className="mt-1.5 max-w-xl text-sm text-white/65">Grants, bounties, hackathons and contests, checked against the source and ranked by fit. Times shown in {tz}.</p>
-          </div>
-          <button onClick={hunt} disabled={hunting || !!keysMissing} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-lime px-5 py-3 text-sm font-semibold text-night shadow-[0_0_30px_-6px_rgba(198,244,50,0.45)] transition hover:bg-lime-soft disabled:opacity-50">
+      <section className="relative grid items-center gap-6 border-b border-white/10 pb-8 pt-2 sm:grid-cols-[1fr_auto] sm:gap-10">
+        <div>
+          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-fg/45">
+            <span className={`h-1.5 w-1.5 rounded-full bg-lime ${hunting ? "animate-ping" : ""}`} />
+            {hunting ? "Hunting now" : "Your hunt"}
+          </p>
+          <h1 className="mt-4 text-[2.4rem] font-semibold leading-[1] sm:text-5xl">
+            {profile?.name ? `${profile.name.split(" ")[0]},` : "Opportunities"}{" "}
+            <span className="font-serif font-normal italic text-lime">{profile?.name ? "here's what fits you." : "that fit you."}</span>
+          </h1>
+          <p className="mt-4 max-w-lg text-sm leading-relaxed text-fg/50">Grants, bounties, hackathons and contests, checked against the source and ranked by fit. Times shown in {tz}.</p>
+          <button onClick={hunt} disabled={hunting || !!keysMissing} className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-lime py-3 pl-5 pr-6 text-sm font-semibold text-night transition hover:bg-lime-soft disabled:opacity-50">
             {hunting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radar className="h-4 w-4" />}
             {hunting ? "Hunting…" : "Hunt now"}
           </button>
+        </div>
+        <div aria-hidden className="hidden w-52 sm:block lg:w-60">
+          <RadarScope labels={false} speed={hunting ? 3.5 : 0.7} />
         </div>
       </section>
 
       {keysMissing && <p className="flex items-start gap-2 rounded-xl bg-amber-400/10 p-3 text-sm text-amber-300 ring-1 ring-amber-400/25"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />Live hunting is paused: the server is missing {!status.tokenFactory.configured ? "NEBIUS_API_KEY" : ""}{!status.tokenFactory.configured && !status.tavily.configured ? " and " : ""}{!status.tavily.configured ? "TAVILY_API_KEY" : ""}.</p>}
       {hunting && (
-        <div className="rounded-xl bg-surface p-4 text-sm ring-1 ring-white/[0.08]" aria-live="polite">
+        <div className="border-l border-lime/40 py-1 pl-4 text-sm" aria-live="polite">
           <ol className="space-y-1.5">
             {HUNT_STEPS.map((s, i) => (
               <li key={s} className={`flex items-center gap-2 ${i < step ? "text-fg/40" : i === step ? "font-medium text-fg" : "text-fg/25"}`}>

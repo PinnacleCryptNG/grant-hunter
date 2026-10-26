@@ -37,22 +37,18 @@ export function DigestView() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <section className="relative overflow-hidden rounded-3xl border-glow p-6 text-fg sm:p-7">
-        <div aria-hidden className="grid-bg pointer-events-none absolute inset-0" />
-        <div aria-hidden className="pointer-events-none absolute -right-10 -top-28 h-72 w-72 animate-float rounded-full bg-lime/20 blur-3xl" />
-        <div className="relative">
-        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-lime" suppressHydrationWarning><CalendarCheck className="h-3.5 w-3.5" />{digest?.day ? new Date(`${digest.day}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : "Today"}</p>
-        <h1 className="mt-1.5 text-2xl font-semibold sm:text-3xl">{digest?.headline ?? "Today's top 5"}</h1>
-        <p className="mt-1.5 text-sm text-white/65">Your five best open matches, ranked by fit, with a boost for anything closing this week. Refreshed every morning.</p>
-        <div className="mt-4 flex gap-2">
-          <button onClick={() => load(true)} disabled={busy} className="inline-flex items-center gap-1.5 rounded-xl bg-lime px-4 py-2.5 text-sm font-semibold text-night transition hover:bg-lime-soft disabled:opacity-60">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}{busy ? "Refreshing…" : "Refresh"}</button>
+      <section className="border-b border-white/10 pb-8 pt-2">
+        <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-fg/45" suppressHydrationWarning><CalendarCheck className="h-3.5 w-3.5 text-lime" />{digest?.day ? new Date(`${digest.day}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : "Today"}</p>
+        <h1 className="mt-4 text-[2.4rem] font-semibold leading-[1] sm:text-5xl">{digest?.headline ?? <>Today&apos;s <span className="font-serif font-normal italic text-lime">top five.</span></>}</h1>
+        <p className="mt-4 text-sm leading-relaxed text-fg/50">Your five best open matches, ranked by fit, with a boost for anything closing this week. Refreshed every morning.</p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button onClick={() => load(true)} disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-lime py-2.5 pl-4 pr-5 text-sm font-semibold text-night transition hover:bg-lime-soft disabled:opacity-60">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}{busy ? "Refreshing…" : "Refresh"}</button>
           {digest && (
-            <button onClick={async () => { await navigator.clipboard.writeText(asText(digest)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/5">
+            <button onClick={async () => { await navigator.clipboard.writeText(asText(digest)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="inline-flex items-center gap-2 rounded-full py-2.5 pl-4 pr-5 text-sm font-semibold text-fg ring-1 ring-white/20 transition hover:bg-white/5">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? "Copied" : "Copy as text"}
             </button>
           )}
-        </div>
         </div>
       </section>
 

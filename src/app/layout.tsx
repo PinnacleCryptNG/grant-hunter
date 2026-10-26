@@ -17,8 +17,8 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${display.variable} ${serif.variable} ${mono.variable} min-h-dvh bg-night font-sans text-fg antialiased`}>
+    <html lang="en" className={`${inter.variable} ${display.variable} ${serif.variable} ${mono.variable}`}>
+      <body className={`min-h-dvh bg-night font-sans text-fg antialiased`}>
         <Nav />
         {children}
       </body>

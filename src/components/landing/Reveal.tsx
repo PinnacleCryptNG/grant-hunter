@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function Reveal({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -25,17 +25,43 @@ export function Reveal({ children, className = "", delay = 0 }: { children: Reac
   );
 }
 
-export function Spotlight({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function ScrollWords({ text, className = "" }: { text: string; className?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const on = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (reduced) return setP(1);
+        const r = el.getBoundingClientRect();
+        setP(Math.min(1, Math.max(0, (innerHeight * 0.8 - r.top) / (r.height + innerHeight * 0.2))));
+      });
+    };
+    on();
+    addEventListener("scroll", on, { passive: true });
+    addEventListener("resize", on);
+    return () => {
+      cancelAnimationFrame(raf);
+      removeEventListener("scroll", on);
+      removeEventListener("resize", on);
+    };
+  }, []);
+  const words = text.split(" ");
   return (
-    <div
-      className={`spotlight ${className}`}
-      onMouseMove={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        e.currentTarget.style.setProperty("--x", `${e.clientX - r.left}px`);
-        e.currentTarget.style.setProperty("--y", `${e.clientY - r.top}px`);
-      }}
-    >
-      {children}
-    </div>
+    <p ref={ref} className={className}>
+      {words.map((w, i) => {
+        const hl = w.includes("*");
+        const lit = (i + 0.5) / words.length < p;
+        return (
+          <span key={i} className={`transition-[color,opacity] duration-500 ${hl ? "font-serif font-normal italic" : ""} ${lit ? (hl ? "text-lime" : "text-fg") : "text-fg/[0.13]"}`}>
+            {w.replace(/\*/g, "")}{" "}
+          </span>
+        );
+      })}
+    </p>
   );
 }
