@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/llm", () => ({ chatJson: vi.fn(async () => ({ data: { score: 95, verdict: "Great", reasons: [], risks: [] }, model: "nemotron-test" })) }));
 
 import { ruleRisks, scoreOpportunity } from "@/lib/score";
-import { DEMO_PROFILE } from "@/lib/seed";
+import { EMPTY_PROFILE } from "@/lib/profile";
+
+const PROFILE = { ...EMPTY_PROFILE, name: "Test User", skills: ["TypeScript"], ecosystems: ["Solana"], interests: ["AI agents"], country: "Kenya" };
 import type { Extracted } from "@/lib/types";
 
 const U = { value: "unknown", evidence: null };
@@ -28,7 +30,7 @@ const base: Extracted = {
   openStatus: "open",
   unknownFields: ["organizer", "eligibleCountries", "entryFee", "howToApply"],
 };
-const codes = (x: Partial<Extracted>) => ruleRisks({ ...base, ...x }, DEMO_PROFILE).map((r) => r.code);
+const codes = (x: Partial<Extracted>) => ruleRisks({ ...base, ...x }, PROFILE).map((r) => r.code);
 const memory = { liked: [], rejected: [], applied: [] };
 
 describe("ruleRisks", () => {
@@ -41,17 +43,17 @@ describe("ruleRisks", () => {
   it("flags unclear terms when critical fields are unknown", () =>
     expect(codes({ unknownFields: ["reward", "deadline", "payoutMethod"] })).toContain("unclear_terms"));
   it("flags the user's country when excluded", () =>
-    expect(codes({ eligibleCountries: { value: `Worldwide, except ${DEMO_PROFILE.country}`, evidence: "x" } })).toContain("country"));
+    expect(codes({ eligibleCountries: { value: `Worldwide, except ${PROFILE.country}`, evidence: "x" } })).toContain("country"));
 });
 
 describe("scoreOpportunity", () => {
   it("caps the model's score when a high-severity rule fires", async () => {
-    const { scoring } = await scoreOpportunity({ ...base, entryFee: { value: "$50 entry fee", evidence: "x" } }, DEMO_PROFILE, memory);
+    const { scoring } = await scoreOpportunity({ ...base, entryFee: { value: "$50 entry fee", evidence: "x" } }, PROFILE, memory);
     expect(scoring.score).toBeLessThanOrEqual(60);
     expect(scoring.risks.map((r) => r.code)).toContain("entry_fee");
   });
   it("caps closed opportunities near zero", async () => {
-    const { scoring } = await scoreOpportunity({ ...base, openStatus: "closed" }, DEMO_PROFILE, memory);
+    const { scoring } = await scoreOpportunity({ ...base, openStatus: "closed" }, PROFILE, memory);
     expect(scoring.score).toBeLessThanOrEqual(5);
   });
 });

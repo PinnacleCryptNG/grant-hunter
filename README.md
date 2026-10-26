@@ -4,7 +4,7 @@
 
 Built for the **Nebius x NVIDIA Global AI Hackathon — Personal AI track**.
 
-- **Live demo: https://grant-hunter-omega.vercel.app** (opens with a seeded demo profile, no sign-up)
+- **Live demo: https://grant-hunter-omega.vercel.app** (no sign-up: fill in your profile, then press **Hunt now**)
 - Stack: Next.js 15 + Tailwind (App Router, API routes as the backend), Postgres (Neon on Vercel, embedded PGlite locally), Vercel Cron
 - AI: **NVIDIA Nemotron** models served by **Nebius Token Factory**; web search by **Tavily**
 
@@ -53,9 +53,9 @@ cp .env.example .env.local   # add NEBIUS_API_KEY and TAVILY_API_KEY
 npm run dev                  # http://localhost:3000
 ```
 
-Without `DATABASE_URL`, data is kept in an embedded Postgres (PGlite) under `./.data`. Open the app, check the seeded demo profile under **Profile**, then press **Hunt now**.
+Without `DATABASE_URL`, data is kept in an embedded Postgres (PGlite) under `./.data`. Open the app, fill in your profile under **Profile**, then press **Hunt now**.
 
-Each browser gets its own anonymous user (cookie), which starts as a copy of the demo profile and its scored opportunities.
+Each browser gets its own anonymous user (cookie) with an empty profile. Hunting unlocks once the profile has at least one skill, interest or ecosystem.
 
 ## Tests
 
@@ -78,8 +78,7 @@ The deployed app always uses Nebius Token Factory.
 1. Import the repo in Vercel (framework: Next.js).
 2. Add a database: Vercel → Storage → Create Database → Neon. This injects `DATABASE_URL`. Tables are created automatically on first request.
 3. Set env vars: `NEBIUS_API_KEY`, `TAVILY_API_KEY`, `CRON_SECRET` (any random string).
-4. Deploy. `vercel.json` schedules `GET /api/cron` daily at 06:00 UTC: it hunts for the demo profile and recently active users with daily hunting on, then refreshes their digest.
-5. Press **Hunt now** once on the live site so the demo profile has data for judges.
+4. Deploy. `vercel.json` schedules `GET /api/cron` daily at 06:00 UTC: it hunts for up to 3 users active in the last 7 days who have daily hunting on and a filled-in profile, then refreshes their digest.
 
 ## API
 

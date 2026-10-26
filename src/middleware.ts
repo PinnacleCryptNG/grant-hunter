@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-  if (req.cookies.get("gh_uid")) return NextResponse.next();
+  const current = req.cookies.get("gh_uid")?.value;
+  if (current && /^[a-zA-Z0-9_-]{6,64}$/.test(current)) return NextResponse.next();
   const id = crypto.randomUUID().replace(/-/g, "");
   req.cookies.set("gh_uid", id);
   const res = NextResponse.next({ request: { headers: req.headers } });

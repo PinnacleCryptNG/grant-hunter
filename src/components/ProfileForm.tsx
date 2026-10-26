@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { DEMO_PROFILE } from "@/lib/seed";
 import type { Profile } from "@/lib/types";
 
 const input = "w-full rounded-lg border-0 bg-slate-50 px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-900";
@@ -81,9 +80,8 @@ export function ProfileForm() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Your profile</h1>
-          <p className="mt-1 text-sm text-slate-500">The agent scores and drafts from this. It is stored on the server and tied to this browser.</p>
+          <p className="mt-1 text-sm text-slate-500">The agent hunts, scores and drafts from this. Add at least one skill, interest or ecosystem before hunting. It is stored on the server and tied to this browser.</p>
         </div>
-        <button type="button" onClick={() => { setP(DEMO_PROFILE); setSaved(false); }} className="shrink-0 text-xs font-medium text-slate-500 underline underline-offset-2">Load demo profile</button>
       </div>
 
       <Section title="About you">

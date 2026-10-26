@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { hasProfileSignal } from "@/lib/profile";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDeadline, hostOf } from "@/lib/format";
 import { markdownToText } from "@/lib/text";
@@ -48,7 +49,13 @@ export function Dashboard() {
     return () => clearInterval(t);
   }, [hunting]);
 
+  const needsProfile = profile !== null && !hasProfileSignal(profile);
+
   async function hunt() {
+    if (needsProfile) {
+      setMessage("Fill in your profile first: add at least one skill, interest or ecosystem.");
+      return;
+    }
     setHunting(true);
     setMessage(null);
     try {
@@ -147,7 +154,13 @@ export function Dashboard() {
       {items === null ? (
         <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-28 animate-pulse rounded-2xl bg-white ring-1 ring-slate-200" />)}</div>
       ) : visible.length === 0 ? (
-        <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500 ring-1 ring-slate-200">Nothing here yet. Press <strong>Hunt now</strong> to search the web for opportunities that fit your profile.</div>
+        <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500 ring-1 ring-slate-200">
+          {needsProfile ? (
+            <>Start by <Link href="/profile" className="font-medium text-slate-900 underline underline-offset-2">filling in your profile</Link> (skills, interests, ecosystems, country). Then press <strong>Hunt now</strong>.</>
+          ) : (
+            <>Nothing here yet. Press <strong>Hunt now</strong> to search the web for opportunities that fit your profile.</>
+          )}
+        </div>
       ) : (
         <ul className="grid gap-3 lg:grid-cols-2">
           {visible.map((o) => (

@@ -64,7 +64,7 @@ function respond(model, system, user) {
     return JSON.stringify({ headline: "Five strong fits, two closing this week", items: items.map((i) => ({ id: i.id, why: `Strong fit (${i.score}).`, nextStep: "Draft the application tonight." })) });
   }
   if (system.includes("reasoning module"))
-    return `<think>weighing...</think>${JSON.stringify({ summary: "Worth applying.", strengths: ["Relevant portfolio"], gaps: ["Unknown payout"], questionsToVerify: ["Is Nigeria eligible?"], effortEstimateHours: 12, expectedValueNote: "Reward exceeds 12h x rate.", recommendation: "apply" })}`;
+    return `<think>weighing...</think>${JSON.stringify({ summary: "Worth applying.", strengths: ["Relevant portfolio"], gaps: ["Unknown payout"], questionsToVerify: ["Is my country eligible?"], effortEstimateHours: 12, expectedValueNote: "Reward exceeds 12h x rate.", recommendation: "apply" })}`;
   if (system.includes("writing module")) return `## Application\n\n**One-liner:** I build AI agents.\n\n[Check: confirm the deadline]\n\n_model: ${model}_`;
   return "{}";
 }

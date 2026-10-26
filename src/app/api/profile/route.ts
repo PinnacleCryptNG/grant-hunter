@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { EMPTY_PROFILE } from "@/lib/seed";
+import { EMPTY_PROFILE } from "@/lib/profile";
 import type { Profile } from "@/lib/types";
 import { currentUserId, getProfile, saveProfile } from "@/lib/user";
 
