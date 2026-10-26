@@ -42,6 +42,23 @@ On first use the server reads Token Factory's `GET /v1/models` and picks, per ti
 
 `src/lib/extract.ts` asks Nemotron for `{ value, evidence }` per field, with `"unknown"` when the page doesn't say. The server then normalises the page and the quote and drops any value whose evidence isn't found on the page. Deadlines without a stated timezone are flagged as such. Rule-based risks (sponsor token, entry fee, unclear terms, closed, excluded country) are computed from the verified fields in `src/lib/score.ts`, so the model can add risks but can't remove them.
 
+### Agent trace, structured output and limits
+
+- **Agent trace:** every Nemotron and Tavily call is logged to `agent_steps` (operation, model, tokens, time, success) by `src/lib/trace.ts`. Each opportunity page shows the calls made for it.
+- **Structured output:** extraction, scoring and search planning send a strict JSON schema (`src/lib/schemas.ts`) as `response_format: json_schema`. If Token Factory or the model rejects it, `chatJson` falls back to JSON mode, then to plain text, and remembers which models don't support it.
+- **Background hunts:** `POST /api/hunt` creates a `hunts` row and runs the hunt after responding; the dashboard polls `GET /api/hunt?id=` for live stage and counts. The daily cron starts a separate `/api/cron/hunt` call per user, each with its own time limit, and retries once.
+- **Rate limits:** hunts and Nemotron Ultra/Super requests are capped per visitor, per IP and site-wide per day, with counters in Postgres (`src/lib/ratelimit.ts`). Defaults: 4 hunts/hour per visitor, 8 per IP, 200/day site-wide; 20 AI requests/hour per visitor, 40 per IP, 1000/day. Override with `HUNT_LIMIT_PER_USER_HOUR`, `HUNT_LIMIT_PER_IP_HOUR`, `HUNT_LIMIT_PER_DAY`, `LLM_LIMIT_PER_USER_HOUR`, `LLM_LIMIT_PER_IP_HOUR`, `LLM_LIMIT_PER_DAY`.
+
+## Extraction accuracy eval
+
+`eval/pages/` holds 20 real pages saved from Tavily (Superteam Earn, Devpost, Gitcoin, ecosystem grant and creator contest pages), and `eval/labels.json` has hand labels for what each page actually states: whether it is a single opportunity, the reward, the deadline and whether it is closed. `npm run eval` runs the real extraction step over all 20 and reports accuracy per field, how many values are backed by a quote found on the page, and how many fields were left `unknown`. Results are written to `eval/results.json`.
+
+```bash
+NEBIUS_API_KEY=... npm run eval
+```
+
+Results with Nemotron on Token Factory: _pending, will be added once the key is configured._
+
 ## Run it locally
 
 Requires Node 20+.
@@ -61,7 +78,7 @@ Each browser gets its own anonymous user (cookie) with an empty profile. Hunting
 ## Tests
 
 ```bash
-npm test          # vitest: evidence check, unknown fields, risk rules, score caps, hunt URL filters, digest ranking
+npm test          # vitest: evidence check, unknown fields, risk rules, score caps, hunt URL filters, digest ranking, rate limits, structured output
 npx tsc --noEmit && npm run lint
 ```
 
@@ -72,28 +89,30 @@ npm run mock:llm &                                   # http://localhost:4010/v1/
 NEBIUS_API_KEY=mock NEBIUS_BASE_URL=http://localhost:4010/v1/ npm run dev
 ```
 
-The deployed app always uses Nebius Token Factory.
+The deployed app always uses Nebius Token Factory. GitHub Actions (`.github/workflows/ci.yml`) runs type checks, lint, tests and a production build on every push and pull request.
 
 ## Deploy (Vercel)
 
 1. Import the repo in Vercel (framework: Next.js).
 2. Add a database: Vercel → Storage → Create Database → Neon. This injects `DATABASE_URL`. Tables are created automatically on first request.
 3. Set env vars: `NEBIUS_API_KEY`, `TAVILY_API_KEY`, `CRON_SECRET` (any random string).
-4. Deploy. `vercel.json` schedules `GET /api/cron` daily at 06:00 UTC: it hunts for up to 3 users active in the last 7 days who have daily hunting on and a filled-in profile, then refreshes their digest.
+4. Deploy. `vercel.json` schedules `GET /api/cron` daily at 06:00 UTC: for each user active in the last 7 days with daily hunting on and a filled-in profile (up to `CRON_MAX_USERS`, default 25), it starts a separate hunt + digest run.
 
 ## API
 
 | Route | Purpose |
 | --- | --- |
 | `GET/PUT /api/profile` | Read / save the profile |
-| `POST /api/hunt` | Run a hunt now (Tavily → Nemotron extract → verify → score) |
+| `POST /api/hunt` | Start a hunt in the background (Tavily → Nemotron extract → verify → score); returns `huntId` |
+| `GET /api/hunt[?id=]` | Hunt status and live progress |
 | `GET /api/opportunities` | Scored opportunities for the current user |
-| `GET/PATCH /api/opportunities/:id` | Detail + drafts / set status and feedback note |
+| `GET/PATCH /api/opportunities/:id` | Detail, drafts and agent trace / set status and feedback note |
 | `POST /api/opportunities/:id/rescore` | Rescore with the latest profile and memory |
 | `POST /api/opportunities/:id/analyze` | Deep fit analysis (Nemotron Ultra) |
 | `POST/PATCH /api/opportunities/:id/draft` | Generate a draft (Nemotron Ultra) / edit or approve it |
 | `GET /api/digest[?regenerate=1]` | Today's top 5 |
-| `GET /api/cron` | Scheduled hunt + digest (needs `CRON_SECRET`) |
+| `GET /api/cron` | Daily schedule: starts one hunt per user (needs `CRON_SECRET`) |
+| `POST /api/cron/hunt` | One user's scheduled hunt + digest (needs `CRON_SECRET`) |
 | `GET /api/status` | Which keys, models and database are configured |
 
 ## License

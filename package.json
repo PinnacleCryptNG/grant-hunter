@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "mock:llm": "node scripts/mock-token-factory.mjs"
+    "mock:llm": "node scripts/mock-token-factory.mjs",
+    "eval": "vite-node scripts/eval.mts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.12",

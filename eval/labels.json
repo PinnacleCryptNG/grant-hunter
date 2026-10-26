@@ -1,0 +1,23 @@
+{
+ "_note": "Hand-labelled from the saved page text in eval/pages. A field is only labelled where the page states it; reward/deadline are substrings the extracted value must contain. single=false means a roundup, index or product page the agent should not treat as one opportunity.",
+ "p01": { "single": true, "reward": "125" },
+ "p02": { "single": true, "reward": "5,000" },
+ "p03": { "single": true, "reward": "1,000" },
+ "p04": { "single": true, "reward": "2,100" },
+ "p05": { "single": true, "reward": "20" },
+ "p06": { "single": true, "status": "closed" },
+ "p07": { "single": true },
+ "p08": { "single": true },
+ "p09": { "single": true },
+ "p10": { "single": true, "reward": "23,000" },
+ "p11": { "single": false },
+ "p12": { "single": true },
+ "p13": { "single": true, "reward": "5,000" },
+ "p14": { "single": true, "reward": "450,000" },
+ "p15": { "single": true },
+ "p16": { "single": true, "deadline": "31 March", "status": "closed" },
+ "p17": { "single": true, "deadline": "July 1, 2026", "status": "closed" },
+ "p18": { "single": true, "status": "closed" },
+ "p19": { "single": false },
+ "p20": { "single": false }
+}
