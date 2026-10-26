@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Grant Hunter
 
-## Getting Started
+**A personal AI agent that hunts grants, bounties, hackathons and creator contests for you, verifies the terms, scores the fit, and drafts your application.**
 
-First, run the development server:
+Built for the **Nebius x NVIDIA Global AI Hackathon — Personal AI track**.
+
+- Live demo: _see the repo About link_ (opens with a seeded demo profile, no sign-up)
+- Stack: Next.js 15 + Tailwind (App Router, API routes as the backend), Postgres (Neon on Vercel, embedded PGlite locally), Vercel Cron
+- AI: **NVIDIA Nemotron** models served by **Nebius Token Factory**; web search by **Tavily**
+
+## What it does
+
+1. **Profile & memory.** You fill in skills, links, portfolio, country, timezone, rates, ecosystems and payout preferences. It is stored in Postgres. Every opportunity you save, apply to or reject (with an optional note such as "paid in an illiquid token") is remembered and fed back into future scores and drafts.
+2. **Hunt.** On demand (**Hunt now**) and daily (Vercel Cron), the agent runs Tavily searches across Superteam Earn, Devpost, Gitcoin, X announcements, ecosystem grant pages and creator contests, plus 3 extra queries that Nemotron Nano plans from your profile.
+3. **Verify & score.** Nemotron reads each page and extracts reward, deadline, eligibility, eligible countries, payout method, entry fee and how to apply. Every value must come with a verbatim quote, and the server checks that the quote is really on the page. If it isn't, the field becomes `unknown`. Deadlines are stored in UTC and shown in your timezone. Nemotron then scores fit 0-100 with plus/minus reasons and flags risks: country not eligible, paid in the sponsor's own token, entry fees, unclear terms, deadline passed. Listing pages and closed opportunities are dropped.
+4. **Draft.** On any opportunity, Nemotron Ultra writes a tailored application, a pitch or an X thread from your profile and portfolio only. Nothing is submitted: you edit it, approve it, then copy it. Nemotron Ultra can also run a **deep fit analysis** (apply / maybe / skip, effort vs reward, what to verify).
+5. **Dashboard.** Opportunities sorted by score or deadline, live countdowns, status (new / saved / applied / rejected), and a detail view with the verified terms, evidence quotes and sources.
+6. **Daily digest.** "Today's top 5": ranked by fit with a boost for deadlines this week, with a one-line why and next step for each, written by Nemotron Super.
+
+## How Nemotron, Token Factory and Tavily are used
+
+All LLM calls go through `src/lib/llm.ts`, an OpenAI SDK client pointed at Nebius Token Factory (`https://api.tokenfactory.nebius.com/v1/`, key in `NEBIUS_API_KEY`). There are no other LLM providers in the code.
+
+| Step | Model (Nebius Token Factory) | Code |
+| --- | --- | --- |
+| Plan profile-specific search queries | Nemotron Nano (`nvidia/NVIDIA-Nemotron-Nano-9B-v2`) | `src/lib/hunt.ts` |
+| Extract reward, deadline, eligibility, payout from each page (JSON, with evidence quotes) | Nemotron Nano | `src/lib/extract.ts` |
+| Score fit 0-100 with reasons and risks, using profile + memory | Nemotron Super (`nvidia/Llama-3_3-Nemotron-Super-49B-v1_5`) | `src/lib/score.ts` |
+| Daily digest | Nemotron Super | `src/lib/digest.ts` |
+| Deep fit analysis (reasoning on) | Nemotron Ultra (`nvidia/Llama-3_1-Nemotron-Ultra-253B-v1`) | `src/lib/draft.ts` |
+| Application / pitch / X-thread drafts | Nemotron Ultra | `src/lib/draft.ts` |
+
+Model IDs can be overridden with `NEMOTRON_NANO_MODEL`, `NEMOTRON_SUPER_MODEL` and `NEMOTRON_ULTRA_MODEL`. Nemotron's reasoning is toggled per call with its system-prompt switch (`detailed thinking on/off`, or `/think` / `/no_think` for Nemotron Nano v2), and `<think>` blocks are stripped before parsing.
+
+**Tavily** (`src/lib/tavily.ts`, key in `TAVILY_API_KEY`):
+
+- `POST /search` with `search_depth: "advanced"`, `include_raw_content: "markdown"`, `time_range: "month"` and per-source `include_domains` (e.g. `earn.superteam.fun`, `devpost.com`, `gitcoin.co`, `x.com`). The raw page markdown is what Nemotron reads, so one call both finds and fetches the page.
+- `POST /extract` as a fallback for results whose raw content is missing or too short.
+
+### No invented fields
+
+`src/lib/extract.ts` asks Nemotron for `{ value, evidence }` per field, with `"unknown"` when the page doesn't say. The server then normalises the page and the quote and drops any value whose evidence isn't found on the page. Deadlines without a stated timezone are flagged as such. Rule-based risks (sponsor token, entry fee, unclear terms, closed, excluded country) are computed from the verified fields in `src/lib/score.ts`, so the model can add risks but can't remove them.
+
+## Run it locally
+
+Requires Node 20+.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/PinnacleCryptNG/grant-hunter.git
+cd grant-hunter
+npm install
+cp .env.example .env.local   # add NEBIUS_API_KEY and TAVILY_API_KEY
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Without `DATABASE_URL`, data is kept in an embedded Postgres (PGlite) under `./.data`. Open the app, check the seeded demo profile under **Profile**, then press **Hunt now**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Each browser gets its own anonymous user (cookie), which starts as a copy of the demo profile and its scored opportunities.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy (Vercel)
 
-## Learn More
+1. Import the repo in Vercel (framework: Next.js).
+2. Add a database: Vercel → Storage → Create Database → Neon. This injects `DATABASE_URL`. Tables are created automatically on first request.
+3. Set env vars: `NEBIUS_API_KEY`, `TAVILY_API_KEY`, `CRON_SECRET` (any random string).
+4. Deploy. `vercel.json` schedules `GET /api/cron` daily at 06:00 UTC: it hunts for the demo profile and recently active users with daily hunting on, then refreshes their digest.
+5. Press **Hunt now** once on the live site so the demo profile has data for judges.
 
-To learn more about Next.js, take a look at the following resources:
+## API
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Route | Purpose |
+| --- | --- |
+| `GET/PUT /api/profile` | Read / save the profile |
+| `POST /api/hunt` | Run a hunt now (Tavily → Nemotron extract → verify → score) |
+| `GET /api/opportunities` | Scored opportunities for the current user |
+| `GET/PATCH /api/opportunities/:id` | Detail + drafts / set status and feedback note |
+| `POST /api/opportunities/:id/rescore` | Rescore with the latest profile and memory |
+| `POST /api/opportunities/:id/analyze` | Deep fit analysis (Nemotron Ultra) |
+| `POST/PATCH /api/opportunities/:id/draft` | Generate a draft (Nemotron Ultra) / edit or approve it |
+| `GET /api/digest[?regenerate=1]` | Today's top 5 |
+| `GET /api/cron` | Scheduled hunt + digest (needs `CRON_SECRET`) |
+| `GET /api/status` | Which keys, models and database are configured |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## License
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT, see [LICENSE](LICENSE).
