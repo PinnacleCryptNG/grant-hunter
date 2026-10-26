@@ -55,6 +55,13 @@ On first use the server reads Token Factory's `GET /v1/models` and picks, per ti
 - **Re-checking saved opportunities:** before the daily digest, `src/lib/recheck.ts` re-reads up to 5 saved opportunities (each at most once a day) with Tavily Extract and the same Nemotron extraction and evidence check, then updates the deadline and closed status. The detail page shows what changed ("Re-checked: deadline now Nov 8").
 - **Tavily Crawl of grant hubs:** if the profile lists Solana, Ethereum, Arbitrum or Sui, the hunt also crawls that ecosystem's grant hub one level deep (`tavilyCrawl`, with instructions to keep pages about a single program or funding round), alongside the searches.
 
+### Optional sign-in and Telegram delivery
+
+The app works without an account: a visitor is remembered by an httpOnly cookie. Two optional extras switch on when their env vars are set:
+
+- **GitHub sign-in** (`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`; OAuth callback `<APP_URL>/api/auth/github/callback`). `/login` or the header's **Sign in** runs a standard OAuth flow with a state cookie and only reads the public name and avatar. A first sign-in turns the current visitor into the account, so their profile and history carry over; signing in on another browser loads the same account (`src/lib/auth.ts`).
+- **Telegram digest** (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`). **Connect Telegram** on the profile opens the bot with a one-time code (valid 15 minutes). After the daily hunt the cron job sends the top five there once a day, and the digest page has a **Send to Telegram** button. The bot answers `/digest` and `/stop`. The webhook checks Telegram's secret-token header; run `TELEGRAM_BOT_TOKEN=… APP_URL=… node scripts/telegram-webhook.mjs` once to register it (`src/lib/telegram.ts`).
+
 ## Extraction accuracy eval
 
 `eval/pages/` holds 20 real pages saved from Tavily (Superteam Earn, Devpost, Gitcoin, ecosystem grant and creator contest pages), and `eval/labels.json` has hand labels for what each page actually states: whether it is a single opportunity, the reward, the deadline and whether it is closed. `npm run eval` runs the real extraction step over all 20 and reports accuracy per field, how many values are backed by a quote found on the page, and how many fields were left `unknown`. Results are written to `eval/results.json`.

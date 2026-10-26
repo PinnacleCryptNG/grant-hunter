@@ -1,18 +1,21 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, CalendarCheck, Check, Copy, Loader2, RefreshCw } from "lucide-react";
+import { ArrowRight, CalendarCheck, Check, Copy, Loader2, RefreshCw, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Digest } from "@/lib/digest";
 import { formatDeadline } from "@/lib/format";
 import type { Profile } from "@/lib/types";
 import { Countdown } from "./Countdown";
 import { ScoreBadge } from "./ScoreBadge";
+import { useMe } from "./useMe";
 
 export function DigestView() {
   const [digest, setDigest] = useState<Digest | null | undefined>(undefined);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { me } = useMe();
+  const [sent, setSent] = useState<string | null>(null);
 
   async function load(regenerate = false) {
     setBusy(true);
@@ -47,6 +50,21 @@ export function DigestView() {
             <button onClick={async () => { await navigator.clipboard.writeText(asText(digest)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="inline-flex items-center gap-2 rounded-full py-2.5 pl-4 pr-5 text-sm font-semibold text-fg ring-1 ring-white/20 transition hover:bg-white/5">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? "Copied" : "Copy as text"}
+            </button>
+          )}
+          {digest && me?.telegram && (
+            <button
+              onClick={async () => {
+                setSent("Sending…");
+                const r = await fetch("/api/digest/send", { method: "POST" });
+                const d = await r.json().catch(() => ({}));
+                setSent(r.ok ? "Sent to Telegram" : (d.error ?? "Couldn't send"));
+                setTimeout(() => setSent(null), 3000);
+              }}
+              className="inline-flex items-center gap-2 rounded-full py-2.5 pl-4 pr-5 text-sm font-semibold text-fg ring-1 ring-white/20 transition hover:bg-white/5"
+            >
+              <Send className="h-4 w-4" />
+              {sent ?? "Send to Telegram"}
             </button>
           )}
         </div>

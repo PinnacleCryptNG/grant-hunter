@@ -3,8 +3,9 @@ import { SCHEMA } from "./schema";
 type Row = Record<string, unknown>;
 type QueryFn = (sql: string, params?: unknown[]) => Promise<Row[]>;
 
-let queryFn: Promise<QueryFn> | null = null;
-let migrated: Promise<void> | null = null;
+// Kept on globalThis so every route bundle in `next dev` shares one embedded PGlite instance.
+const g = globalThis as { __ghDb?: { queryFn: Promise<QueryFn> | null; migrated: Promise<void> | null } };
+const state = (g.__ghDb ??= { queryFn: null, migrated: null });
 
 async function createQueryFn(): Promise<QueryFn> {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -22,8 +23,8 @@ async function createQueryFn(): Promise<QueryFn> {
 }
 
 async function raw(): Promise<QueryFn> {
-  if (!queryFn) queryFn = createQueryFn().catch((e) => { queryFn = null; throw e; });
-  return queryFn;
+  if (!state.queryFn) state.queryFn = createQueryFn().catch((e) => { state.queryFn = null; throw e; });
+  return state.queryFn;
 }
 
 async function migrate() {
@@ -34,8 +35,8 @@ async function migrate() {
 }
 
 export async function query<T = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
-  if (!migrated) migrated = migrate().catch((e) => { migrated = null; throw e; });
-  await migrated;
+  if (!state.migrated) state.migrated = migrate().catch((e) => { state.migrated = null; throw e; });
+  await state.migrated;
   const q = await raw();
   return (await q(sql, params)) as T[];
 }

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
 import type { Profile } from "@/lib/types";
+import { AccountPanel } from "./AccountPanel";
 
 const input = "w-full rounded-lg border-0 bg-white/[0.04] px-3 py-2 text-sm text-fg ring-1 ring-white/[0.08] focus:ring-2 focus:ring-lime/60";
 
@@ -82,9 +83,11 @@ export function ProfileForm() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lime">Profile</p>
           <h1 className="mt-1.5 text-2xl font-semibold sm:text-3xl">Tell the agent who you are</h1>
-          <p className="mt-1.5 text-sm text-fg/50">Everything it hunts, scores and writes comes from this, so the more specific you are, the better the matches. Add at least one skill, interest or ecosystem to start. Saved on the server and tied to this browser.</p>
+          <p className="mt-1.5 text-sm text-fg/50">Everything it hunts, scores and writes comes from this, so the more specific you are, the better the matches. Add at least one skill, interest or ecosystem to start. Saved to this browser, or to your GitHub account if you sign in.</p>
         </div>
       </div>
+
+      <AccountPanel />
 
       <Section title="About you">
         <div className="grid gap-4 sm:grid-cols-2">

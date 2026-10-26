@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AccountChip } from "./AccountChip";
 import { ArrowUpRight, CalendarCheck, Crosshair, Github, Radar, UserRound } from "lucide-react";
 
 export const REPO_URL = "https://github.com/PinnacleCryptNG/grant-hunter";
@@ -53,6 +54,7 @@ export function Nav() {
               </Link>
             ))}
           </nav>
+          <AccountChip />
         </div>
       </header>
       <nav className="fixed inset-x-3 bottom-3 z-30 rounded-2xl bg-surface/90 pb-[env(safe-area-inset-bottom)] ring-1 ring-white/10 backdrop-blur-xl sm:hidden">

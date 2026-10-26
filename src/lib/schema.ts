@@ -101,5 +101,14 @@ CREATE INDEX IF NOT EXISTS idx_steps_subject ON agent_steps(subject);
 CREATE INDEX IF NOT EXISTS idx_steps_hunt ON agent_steps(hunt_id);
 ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS embedding JSONB;
 ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS checked_at TIMESTAMPTZ;
-ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS recheck_note TEXT
+ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS recheck_note TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS github_id BIGINT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS github_login TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_code TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_expires TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github ON users(github_id);
+CREATE INDEX IF NOT EXISTS idx_users_tg_code ON users(telegram_link_code);
+ALTER TABLE digests ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ
 `;

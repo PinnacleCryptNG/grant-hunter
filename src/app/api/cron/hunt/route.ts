@@ -3,6 +3,7 @@ import { getDigest } from "@/lib/digest";
 import { runHunt } from "@/lib/hunt";
 import { recheckSaved } from "@/lib/recheck";
 import { authorizedCron } from "@/lib/cron";
+import { deliverDigest } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -15,8 +16,9 @@ export async function POST(req: Request) {
   try {
     const { stats } = await runHunt(userId, "schedule", { maxNew: 8 });
     const rechecked = await recheckSaved(userId).catch(() => []);
-    await getDigest(userId, { regenerate: true });
-    return NextResponse.json({ ok: true, scored: stats.scored, rechecked: rechecked.length });
+    const digest = await getDigest(userId, { regenerate: true });
+    const delivered = digest ? await deliverDigest(userId, digest).catch(() => false) : false;
+    return NextResponse.json({ ok: true, scored: stats.scored, rechecked: rechecked.length, delivered });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e).slice(0, 200) }, { status: 500 });
   }
