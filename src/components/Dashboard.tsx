@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDeadline, hostOf } from "@/lib/format";
+import { markdownToText } from "@/lib/text";
 import type { OpportunityRow, Profile, Status } from "@/lib/types";
 import { Countdown } from "./Countdown";
 import { ScoreBadge } from "./ScoreBadge";
@@ -163,12 +164,12 @@ export function Dashboard() {
                   <Link href={`/o/${o.id}`} className="mt-1 line-clamp-2 font-semibold leading-snug text-slate-900 after:absolute after:inset-0">
                     {o.title}
                   </Link>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-600">{o.scoring?.verdict || o.extracted.summary}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-slate-600">{o.scoring?.verdict || markdownToText(o.extracted.summary)}</p>
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                 <span className={`rounded-full px-2 py-0.5 font-medium ring-1 ring-inset ${o.extracted.reward.value === "unknown" ? "bg-slate-50 text-slate-500 ring-slate-200" : "bg-slate-900 text-white ring-slate-900"}`}>
-                  {o.extracted.reward.value === "unknown" ? "Reward unknown" : o.extracted.reward.value.slice(0, 48)}
+                  {o.extracted.reward.value === "unknown" ? "Reward unknown" : markdownToText(o.extracted.reward.value).slice(0, 48)}
                 </span>
                 <Countdown iso={o.deadline_at} />
                 {(o.scoring?.risks?.length ?? 0) > 0 && (

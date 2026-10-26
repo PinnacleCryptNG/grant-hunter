@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Analysis } from "@/lib/draft";
 import { formatDeadline, hostOf } from "@/lib/format";
+import { markdownToText } from "@/lib/text";
 import type { Extracted, Field, OpportunityRow, Profile, Status } from "@/lib/types";
 import { Countdown } from "./Countdown";
 import { ScoreBadge } from "./ScoreBadge";
@@ -125,7 +126,7 @@ export function OpportunityDetail({ id }: { id: number }) {
           <div className="min-w-0 flex-1">
             <p className="text-xs text-slate-500"><span className="font-medium capitalize text-slate-700">{opp.kind}</span> · {opp.source}</p>
             <h1 className="mt-1 text-xl font-semibold leading-snug tracking-tight">{opp.title}</h1>
-            {x.summary && <p className="mt-2 text-sm text-slate-600">{x.summary}</p>}
+            {x.summary && <p className="mt-2 text-sm text-slate-600">{markdownToText(x.summary)}</p>}
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
@@ -246,7 +247,7 @@ export function OpportunityDetail({ id }: { id: number }) {
                 return (
                   <div key={key} className="py-2.5">
                     <dt className="text-xs font-medium text-slate-500">{label}</dt>
-                    <dd className={`mt-0.5 text-sm ${f.value === "unknown" ? "italic text-slate-400" : "text-slate-900"}`}>{f.value}</dd>
+                    <dd className={`mt-0.5 text-sm ${f.value === "unknown" ? "italic text-slate-400" : "text-slate-900"}`}>{markdownToText(f.value)}</dd>
                     {f.evidence && <dd className="mt-1 border-l-2 border-slate-200 pl-2 text-xs text-slate-500">“{f.evidence}”</dd>}
                   </div>
                 );

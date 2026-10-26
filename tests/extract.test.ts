@@ -72,3 +72,10 @@ describe("extractOpportunity", () => {
     expect(extracted.openStatus).toBe("closed");
   });
 });
+
+describe("markdownToText", async () => {
+  const { markdownToText } = await import("@/lib/text");
+  it("keeps link text and drops URLs, images and markup", () => {
+    expect(markdownToText("[![logo](/a.svg)](/earn) [Prizes](/earn/x) | **$22,300** in cash\n### How to Submit")).toBe("Prizes $22,300 in cash\nHow to Submit");
+  });
+});

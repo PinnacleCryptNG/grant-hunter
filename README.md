@@ -4,7 +4,7 @@
 
 Built for the **Nebius x NVIDIA Global AI Hackathon — Personal AI track**.
 
-- Live demo: _see the repo About link_ (opens with a seeded demo profile, no sign-up)
+- **Live demo: https://grant-hunter-omega.vercel.app** (opens with a seeded demo profile, no sign-up)
 - Stack: Next.js 15 + Tailwind (App Router, API routes as the backend), Postgres (Neon on Vercel, embedded PGlite locally), Vercel Cron
 - AI: **NVIDIA Nemotron** models served by **Nebius Token Factory**; web search by **Tavily**
 
@@ -56,6 +56,22 @@ npm run dev                  # http://localhost:3000
 Without `DATABASE_URL`, data is kept in an embedded Postgres (PGlite) under `./.data`. Open the app, check the seeded demo profile under **Profile**, then press **Hunt now**.
 
 Each browser gets its own anonymous user (cookie), which starts as a copy of the demo profile and its scored opportunities.
+
+## Tests
+
+```bash
+npm test          # vitest: evidence check, unknown fields, risk rules, score caps, hunt URL filters, digest ranking
+npx tsc --noEmit && npm run lint
+```
+
+To run the whole pipeline offline (no Token Factory credits), `scripts/mock-token-factory.mjs` is a test-only stand-in for the chat completions endpoint. It also returns a made-up payout quote on some pages, so you can watch the evidence check turn it into `unknown`:
+
+```bash
+npm run mock:llm &                                   # http://localhost:4010/v1/
+NEBIUS_API_KEY=mock NEBIUS_BASE_URL=http://localhost:4010/v1/ npm run dev
+```
+
+The deployed app always uses Nebius Token Factory.
 
 ## Deploy (Vercel)
 

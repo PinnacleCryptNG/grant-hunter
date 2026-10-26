@@ -1,4 +1,5 @@
 import { chatJson } from "./llm";
+import { markdownToText } from "./text";
 import type { Extracted, Field } from "./types";
 
 const FIELD_KEYS = ["organizer", "reward", "deadline", "eligibility", "eligibleCountries", "payoutMethod", "entryFee", "howToApply"] as const;
@@ -65,11 +66,11 @@ function cleanField(f: unknown): Field {
   if (!f || typeof f !== "object") return UNKNOWN;
   const { value, evidence } = f as Field;
   if (typeof value !== "string" || !value.trim() || /^(unknown|n\/a|not (stated|specified|mentioned))$/i.test(value.trim())) return UNKNOWN;
-  return { value: value.trim(), evidence: typeof evidence === "string" ? evidence.trim() : null };
+  return { value: markdownToText(value).slice(0, 400), evidence: typeof evidence === "string" ? evidence.trim() : null };
 }
 
 export async function extractOpportunity(page: { url: string; title: string; text: string }) {
-  const text = page.text.slice(0, 14000);
+  const text = markdownToText(page.text).slice(0, 14000);
   const today = new Date().toISOString().slice(0, 10);
   const { data, model } = await chatJson<Partial<Extracted>>({
     model: "nano",
@@ -90,7 +91,7 @@ export async function extractOpportunity(page: { url: string; title: string; tex
     if (f.value === "unknown") unknown.add(key);
   }
   out.title = (typeof data.title === "string" && data.title.trim()) || page.title;
-  out.summary = typeof data.summary === "string" ? data.summary : "";
+  out.summary = typeof data.summary === "string" ? markdownToText(data.summary).slice(0, 500) : "";
   out.kind = (["grant", "bounty", "hackathon", "contest", "other"] as const).includes(data.kind as never) ? (data.kind as Extracted["kind"]) : "unknown";
   out.requiredSkills = Array.isArray(data.requiredSkills) ? data.requiredSkills.filter((s) => typeof s === "string").slice(0, 12) : [];
   out.paidInSponsorToken = data.paidInSponsorToken === "yes" || data.paidInSponsorToken === "no" ? data.paidInSponsorToken : "unknown";
