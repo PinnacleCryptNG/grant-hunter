@@ -40,8 +40,12 @@ for (const p of index) {
   const page = norm(text);
   for (const f of FIELDS) {
     const v = x[f] as Field;
-    if (v.value === "unknown") unknown++;
-    else (stated++, v.evidence && page.includes(norm(v.evidence)) && grounded++);
+    if (v.value === "unknown") {
+      unknown++;
+      continue;
+    }
+    stated++;
+    if (v.evidence && page.includes(norm(v.evidence))) grounded++;
   }
   rows.push({ id: p.id, single: x.isSingleOpportunity, reward: x.reward.value, deadline: x.deadline.value, status: x.openStatus });
   console.log(p.id, x.isSingleOpportunity ? "single" : "not-single", "|", x.reward.value.slice(0, 40), "|", x.deadline.value.slice(0, 30), "|", x.openStatus);
