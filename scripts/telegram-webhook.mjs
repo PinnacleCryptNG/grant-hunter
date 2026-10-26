@@ -13,4 +13,4 @@ const call = async (method, body) => {
 };
 await call("setWebhook", { url: `${app}/api/telegram/webhook`, secret_token: secret, allowed_updates: ["message"], drop_pending_updates: true });
 await call("setMyCommands", { commands: [{ command: "digest", description: "Send my latest top five" }, { command: "stop", description: "Stop daily digests" }] });
-await call("setMyDescription", { description: "Grant Hunter sends your five best grant, bounty and hackathon matches every morning. Connect from your Grant Hunter profile." });
+await call("setMyDescription", { description: "Grant Hunter is an AI agent that searches the web for grants, bounties, hackathons and creator contests that fit you. It checks every fact against its source, flags risks, and ranks matches against your profile.\n\nConnect this bot from your Grant Hunter profile and you'll get your top five every morning, with scores, deadlines and links.\n\n/digest sends the latest one. /stop turns it off." });
