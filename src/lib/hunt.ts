@@ -26,7 +26,7 @@ const NOISY_DOMAINS = ["instagram.com", "facebook.com", "tiktok.com", "youtube.c
 
 const SOURCES: { source: string; domains: string[]; timeRange?: HuntQuery["timeRange"]; build: (p: Profile) => string }[] = [
   // Listing sites keep pages live until the deadline, so no recency filter there.
-  { source: "Superteam Earn", domains: ["earn.superteam.fun"], build: (p) => `Superteam Earn listing bounty ${p.skills.slice(0, 2).join(" ")}` },
+  { source: "Superteam Earn", domains: ["superteam.fun", "earn.superteam.fun"], build: (p) => `Superteam Earn listing bounty ${p.skills.slice(0, 2).join(" ")}` },
   { source: "Devpost", domains: ["devpost.com"], build: (p) => `online hackathon open for submissions ${p.interests[0] ?? "AI"} prizes` },
   { source: "Gitcoin", domains: ["gitcoin.co", "grants.gitcoin.co", "explorer.gitcoin.co"], timeRange: "month", build: () => "Gitcoin grants round open applications" },
   { source: "X announcements", domains: ["x.com", "twitter.com"], timeRange: "month", build: (p) => `announcing grant program OR bounty OR hackathon ${p.ecosystems.slice(0, 2).join(" OR ")} apply` },
@@ -54,7 +54,9 @@ export function isCandidateUrl(u: string) {
     // Devpost hackathons live on their own subdomain; devpost.com itself is listings and profiles.
     if (host === "devpost.com") return false;
     if (host.endsWith(".devpost.com")) return !/^\/(project-gallery|forum_topics|submissions|participants|updates)\b/.test(path);
+    // Superteam Earn moved to superteam.fun/earn; only individual listings are opportunities.
     if (host === "earn.superteam.fun") return /^\/listings?\//.test(path);
+    if (host === "superteam.fun") return /^\/earn\/listings?\//.test(path);
     return true;
   } catch {
     return false;

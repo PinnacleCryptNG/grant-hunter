@@ -34,8 +34,9 @@ On first use the server reads Token Factory's `GET /v1/models` and picks, per ti
 
 **Tavily** (`src/lib/tavily.ts`, key in `TAVILY_API_KEY`):
 
-- `POST /search` with `search_depth: "advanced"`, `include_raw_content: "markdown"`, `time_range: "month"` and per-source `include_domains` (e.g. `earn.superteam.fun`, `devpost.com`, `gitcoin.co`, `x.com`). The raw page markdown is what Nemotron reads, so one call both finds and fetches the page.
-- `POST /extract` as a fallback for results whose raw content is missing or too short.
+- Calls go through the official [`@tavily/core`](https://www.npmjs.com/package/@tavily/core) SDK (`src/lib/tavily.ts`).
+- `search()` with `search_depth: "advanced"`, `include_raw_content: "markdown"`, `time_range: "month"` and per-source `include_domains` (e.g. `superteam.fun`, `devpost.com`, `gitcoin.co`, `x.com`). The raw page markdown is what Nemotron reads, so one call both finds and fetches the page.
+- `extract()` as a fallback for results whose raw content is missing or too short.
 
 ### No invented fields
 

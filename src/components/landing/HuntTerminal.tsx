@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 const LINES: { tag: string; tone: string; text: string }[] = [
   { tag: "plan", tone: "text-sky-300", text: "nemotron-nano → 3 searches from your skills" },
-  { tag: "search", tone: "text-violet-300", text: "tavily → earn.superteam.fun, devpost.com, gitcoin.co, x.com" },
+  { tag: "search", tone: "text-violet-300", text: "tavily → superteam.fun/earn, devpost.com, gitcoin.co, x.com" },
   { tag: "read", tone: "text-sky-300", text: "nemotron-nano → reward, deadline, eligibility, payout" },
   { tag: "verify", tone: "text-lime", text: "quote found on page ✓   no quote → \"unknown\"" },
   { tag: "risk", tone: "text-amber-300", text: "country · sponsor token · entry fee · vague terms" },

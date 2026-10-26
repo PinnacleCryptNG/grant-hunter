@@ -13,6 +13,7 @@
   "dependencies": {
     "@electric-sql/pglite": "^0.5.12",
     "@neondatabase/serverless": "^1.2.0",
+    "@tavily/core": "^0.7.14",
     "lucide-react": "^0.468.0",
     "next": "15.5.28",
     "openai": "^7.43.0",

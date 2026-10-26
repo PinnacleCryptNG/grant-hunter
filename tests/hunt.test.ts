@@ -13,6 +13,8 @@ describe("hunt URL handling", () => {
     expect(isCandidateUrl("https://devpost.com/hackathons")).toBe(false);
     expect(isCandidateUrl("https://earn.superteam.fun/listing/some-bounty")).toBe(true);
     expect(isCandidateUrl("https://earn.superteam.fun/")).toBe(false);
+    expect(isCandidateUrl("https://superteam.fun/earn/listing/build-the-solana-stablecoin-standard-bounty")).toBe(true);
+    expect(isCandidateUrl("https://superteam.fun/earn/grants")).toBe(false);
     expect(isCandidateUrl("https://www.instagram.com/p/abc")).toBe(false);
   });
   it("round-robins across queries so every source is represented", () => {

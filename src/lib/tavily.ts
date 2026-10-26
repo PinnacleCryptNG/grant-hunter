@@ -1,4 +1,4 @@
-const TAVILY_URL = "https://api.tavily.com";
+import { tavily, type TavilyClient } from "@tavily/core";
 
 export type TavilyResult = {
   url: string;
@@ -13,15 +13,11 @@ export function tavilyConfigured() {
   return Boolean(process.env.TAVILY_API_KEY);
 }
 
-async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
+let client: TavilyClient | null = null;
+function tvly() {
   if (!process.env.TAVILY_API_KEY) throw new Error("TAVILY_API_KEY is not set");
-  const res = await fetch(`${TAVILY_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.TAVILY_API_KEY}` },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Tavily ${path} failed: ${res.status} ${await res.text()}`);
-  return res.json() as Promise<T>;
+  client ??= tavily({ apiKey: process.env.TAVILY_API_KEY, clientName: "grant-hunter" });
+  return client;
 }
 
 export type SearchOpts = {
@@ -32,25 +28,27 @@ export type SearchOpts = {
   timeRange?: "day" | "week" | "month" | "year";
 };
 
-export async function tavilySearch({ query, includeDomains, excludeDomains, maxResults = 6, timeRange }: SearchOpts) {
-  const data = await post<{ results: TavilyResult[] }>("/search", {
-    query,
-    search_depth: "advanced",
-    max_results: maxResults,
-    include_raw_content: "markdown",
-    ...(includeDomains?.length ? { include_domains: includeDomains } : {}),
-    ...(excludeDomains?.length ? { exclude_domains: excludeDomains } : {}),
-    ...(timeRange ? { time_range: timeRange } : {}),
+export async function tavilySearch({ query, includeDomains, excludeDomains, maxResults = 6, timeRange }: SearchOpts): Promise<TavilyResult[]> {
+  const res = await tvly().search(query, {
+    searchDepth: "advanced",
+    maxResults,
+    includeRawContent: "markdown",
+    ...(includeDomains?.length ? { includeDomains } : {}),
+    ...(excludeDomains?.length ? { excludeDomains } : {}),
+    ...(timeRange ? { timeRange } : {}),
   });
-  return data.results ?? [];
+  return (res.results ?? []).map((r) => ({
+    url: r.url,
+    title: r.title,
+    content: r.content,
+    raw_content: r.rawContent ?? null,
+    score: r.score,
+    published_date: r.publishedDate,
+  }));
 }
 
-export async function tavilyExtract(urls: string[]) {
-  if (urls.length === 0) return [] as { url: string; raw_content: string }[];
-  const data = await post<{ results: { url: string; raw_content: string }[] }>("/extract", {
-    urls,
-    extract_depth: "basic",
-    format: "markdown",
-  });
-  return data.results ?? [];
+export async function tavilyExtract(urls: string[]): Promise<{ url: string; raw_content: string }[]> {
+  if (urls.length === 0) return [];
+  const res = await tvly().extract(urls.slice(0, 20), { extractDepth: "basic", format: "markdown" });
+  return (res.results ?? []).map((r) => ({ url: r.url, raw_content: r.rawContent }));
 }
