@@ -1,26 +1,19 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+.prose-draft h1, .prose-draft h2, .prose-draft h3 { font-weight: 600; margin: 1em 0 0.4em; }
+.prose-draft h1 { font-size: 1.15rem; }
+.prose-draft h2 { font-size: 1.05rem; }
+.prose-draft h3 { font-size: 0.95rem; }
+.prose-draft p { margin: 0.5em 0; }
+.prose-draft ul { list-style: disc; padding-left: 1.25rem; margin: 0.5em 0; }
+.prose-draft ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5em 0; }
+.prose-draft a { color: #0369a1; text-decoration: underline; }
+.prose-draft strong { font-weight: 600; }
