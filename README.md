@@ -23,14 +23,14 @@ All LLM calls go through `src/lib/llm.ts`, an OpenAI SDK client pointed at Nebiu
 
 | Step | Model (Nebius Token Factory) | Code |
 | --- | --- | --- |
-| Plan profile-specific search queries | Nemotron Nano (`nvidia/NVIDIA-Nemotron-Nano-9B-v2`) | `src/lib/hunt.ts` |
+| Plan profile-specific search queries | Nemotron Nano (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`) | `src/lib/hunt.ts` |
 | Extract reward, deadline, eligibility, payout from each page (JSON, with evidence quotes) | Nemotron Nano | `src/lib/extract.ts` |
-| Score fit 0-100 with reasons and risks, using profile + memory | Nemotron Super (`nvidia/Llama-3_3-Nemotron-Super-49B-v1_5`) | `src/lib/score.ts` |
+| Score fit 0-100 with reasons and risks, using profile + memory | Nemotron Super (`nvidia/nemotron-3-super-120b-a12b`) | `src/lib/score.ts` |
 | Daily digest | Nemotron Super | `src/lib/digest.ts` |
-| Deep fit analysis (reasoning on) | Nemotron Ultra (`nvidia/Llama-3_1-Nemotron-Ultra-253B-v1`) | `src/lib/draft.ts` |
+| Deep fit analysis (reasoning on) | Nemotron Ultra (`nvidia/Nemotron-3-Ultra-550b-a55b`) | `src/lib/draft.ts` |
 | Application / pitch / X-thread drafts | Nemotron Ultra | `src/lib/draft.ts` |
 
-Model IDs can be overridden with `NEMOTRON_NANO_MODEL`, `NEMOTRON_SUPER_MODEL` and `NEMOTRON_ULTRA_MODEL`. Nemotron's reasoning is toggled per call with its system-prompt switch (`detailed thinking on/off`, or `/think` / `/no_think` for Nemotron Nano v2), and `<think>` blocks are stripped before parsing.
+On first use the server reads Token Factory's `GET /v1/models` and picks, per tier, the newest Nemotron it serves (Nemotron 3 first, then the Llama-Nemotron / Nano v2 releases); see `MODEL_CANDIDATES` in `src/lib/llm.ts`. `/api/status` shows the models in use. Override with `NEMOTRON_NANO_MODEL`, `NEMOTRON_SUPER_MODEL` and `NEMOTRON_ULTRA_MODEL`. For older Nemotron releases reasoning is toggled with the system-prompt switch (`detailed thinking on/off`, or `/think` / `/no_think`), and `<think>` blocks are always stripped before parsing.
 
 **Tavily** (`src/lib/tavily.ts`, key in `TAVILY_API_KEY`):
 

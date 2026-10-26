@@ -74,6 +74,10 @@ http
     let body = "";
     req.on("data", (c) => (body += c));
     req.on("end", () => {
+      if (req.url.endsWith("/models"))
+        return res.writeHead(200, { "content-type": "application/json" }).end(
+          JSON.stringify({ object: "list", data: ["nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B", "nvidia/nemotron-3-super-120b-a12b", "nvidia/Nemotron-3-Ultra-550b-a55b"].map((id) => ({ id, object: "model", owned_by: "nvidia" })) }),
+        );
       if (!req.url.endsWith("/chat/completions")) return res.writeHead(404).end();
       const b = JSON.parse(body);
       const system = b.messages.find((m) => m.role === "system")?.content ?? "";
