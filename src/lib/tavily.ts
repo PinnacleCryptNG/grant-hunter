@@ -1,4 +1,5 @@
 import { tavily, type TavilyClient } from "@tavily/core";
+import { timed } from "./trace";
 
 export type TavilyResult = {
   url: string;
@@ -29,14 +30,19 @@ export type SearchOpts = {
 };
 
 export async function tavilySearch({ query, includeDomains, excludeDomains, maxResults = 6, timeRange }: SearchOpts): Promise<TavilyResult[]> {
-  const res = await tvly().search(query, {
-    searchDepth: "advanced",
-    maxResults,
-    includeRawContent: "markdown",
-    ...(includeDomains?.length ? { includeDomains } : {}),
-    ...(excludeDomains?.length ? { excludeDomains } : {}),
-    ...(timeRange ? { timeRange } : {}),
-  });
+  const res = await timed(
+    { kind: "tavily", op: "search", detail: query },
+    () =>
+      tvly().search(query, {
+        searchDepth: "advanced",
+        maxResults,
+        includeRawContent: "markdown",
+        ...(includeDomains?.length ? { includeDomains } : {}),
+        ...(excludeDomains?.length ? { excludeDomains } : {}),
+        ...(timeRange ? { timeRange } : {}),
+      }),
+    (r) => ({ detail: `${query} → ${r.results?.length ?? 0} results` }),
+  );
   return (res.results ?? []).map((r) => ({
     url: r.url,
     title: r.title,
@@ -49,6 +55,11 @@ export async function tavilySearch({ query, includeDomains, excludeDomains, maxR
 
 export async function tavilyExtract(urls: string[]): Promise<{ url: string; raw_content: string }[]> {
   if (urls.length === 0) return [];
-  const res = await tvly().extract(urls.slice(0, 20), { extractDepth: "basic", format: "markdown" });
+  const batch = urls.slice(0, 20);
+  const res = await timed(
+    { kind: "tavily", op: "extract", detail: `${batch.length} pages` },
+    () => tvly().extract(batch, { extractDepth: "basic", format: "markdown" }),
+    (r) => ({ detail: `${batch.length} pages → ${r.results?.length ?? 0} read` }),
+  );
   return (res.results ?? []).map((r) => ({ url: r.url, raw_content: r.rawContent }));
 }

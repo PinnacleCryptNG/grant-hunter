@@ -58,6 +58,7 @@ export async function getDigest(userId: string, { regenerate = false } = {}): Pr
   try {
     const res = await chatJson<{ headline: string; items: { id: number; why: string; nextStep: string }[] }>({
       model: "super",
+      op: "digest",
       maxTokens: 1000,
       temperature: 0.3,
       system: `Write a short daily digest for ${profile.name || "the user"}. For each opportunity give one sentence "why" (fit + urgency) and one concrete "nextStep". Use only the given data. Return JSON {"headline": string (max 12 words), "items": [{"id": number, "why": string, "nextStep": string}]}.`,

@@ -13,7 +13,12 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const opp = await getOpportunity(uid, id);
   if (!opp) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const drafts = await query("SELECT id, content, model, approved, created_at FROM drafts WHERE user_id = $1 AND opportunity_id = $2 ORDER BY created_at DESC", [uid, id]);
-  return NextResponse.json({ opportunity: opp, drafts });
+  const trace = await query(
+    `SELECT kind, op, model, prompt_tokens, completion_tokens, ms, ok, detail, created_at FROM agent_steps
+     WHERE subject = $1 OR (subject = $2 AND user_id = $3) ORDER BY created_at ASC LIMIT 50`,
+    [opp.url, `opp:${id}`, uid],
+  );
+  return NextResponse.json({ opportunity: opp, drafts, trace });
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

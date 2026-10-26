@@ -2,9 +2,11 @@ import { one, query } from "./db";
 import { extractOpportunity } from "./extract";
 import { chatJson } from "./llm";
 import { loadMemory } from "./memory";
+import { PLAN_SCHEMA } from "./schemas";
 import { scoreOpportunity } from "./score";
 import { tavilyExtract, tavilySearch, type TavilyResult } from "./tavily";
 import type { Extracted, Profile } from "./types";
+import { withTrace } from "./trace";
 import { getProfile } from "./user";
 
 export type HuntQuery = { query: string; includeDomains?: string[]; excludeDomains?: string[]; timeRange?: "week" | "month" | "year"; source: string };
@@ -20,6 +22,9 @@ export type HuntStats = {
   errors: string[];
   ms: number;
 };
+
+export type HuntStage = "planning" | "searching" | "reading" | "verifying" | "scoring" | "done";
+export const HUNT_STAGES: HuntStage[] = ["planning", "searching", "reading", "verifying", "scoring", "done"];
 
 /** Social feeds and video sites rarely contain verifiable terms; X is searched separately. */
 const NOISY_DOMAINS = ["instagram.com", "facebook.com", "tiktok.com", "youtube.com", "linkedin.com", "pinterest.com", "threads.net"];
@@ -78,6 +83,8 @@ async function plannedQueries(p: Profile): Promise<HuntQuery[]> {
   try {
     const { data } = await chatJson<{ queries: string[] }>({
       model: "nano",
+      op: "plan",
+      schema: PLAN_SCHEMA,
       maxTokens: 400,
       temperature: 0.4,
       system: "You write web search queries that find currently OPEN grants, bounties, hackathons and creator contests for one person. Return JSON {\"queries\": [3 short search queries]}.",
@@ -130,7 +137,7 @@ function sourceFor(url: string, fallback: string) {
 export async function scoreForUser(userId: string, opportunityId: number, extracted: Extracted, profile?: Profile) {
   const p = profile ?? (await getProfile(userId));
   const memory = await loadMemory(userId);
-  const { scoring, model } = await scoreOpportunity(extracted, p, memory);
+  const { scoring, model } = await withTrace({ userId, subject: `opp:${opportunityId}` }, () => scoreOpportunity(extracted, p, memory));
   await query(
     `INSERT INTO user_opportunities (user_id, opportunity_id, score, scoring, model, updated_at)
      VALUES ($1, $2, $3, $4, $5, now())
@@ -140,14 +147,38 @@ export async function scoreForUser(userId: string, opportunityId: number, extrac
   return scoring;
 }
 
-export async function runHunt(userId: string, trigger: "manual" | "schedule", opts: { maxNew?: number } = {}) {
+/** Creates the hunt row that the dashboard polls for progress. */
+export async function startHunt(userId: string, trigger: "manual" | "schedule") {
+  const row = await one<{ id: number }>("INSERT INTO hunts (user_id, trigger, status, progress) VALUES ($1, $2, 'running', $3) RETURNING id", [
+    userId,
+    trigger,
+    JSON.stringify({ stage: "planning" }),
+  ]);
+  return row!.id;
+}
+
+export async function runHunt(userId: string, trigger: "manual" | "schedule", opts: { maxNew?: number; huntId?: number } = {}) {
+  const huntId = opts.huntId ?? (await startHunt(userId, trigger));
+  try {
+    return await withTrace({ userId, huntId }, () => hunt(userId, huntId, opts.maxNew ?? 10));
+  } catch (e) {
+    await query("UPDATE hunts SET status = 'failed', error = $2, finished_at = now() WHERE id = $1", [huntId, String(e).slice(0, 500)]);
+    throw e;
+  }
+}
+
+async function hunt(userId: string, huntId: number, maxNew: number) {
   const started = Date.now();
-  const maxNew = opts.maxNew ?? 10;
   const profile = await getProfile(userId);
   const stats: HuntStats = { queries: 0, results: 0, newPages: 0, extracted: 0, skippedListing: 0, skippedClosed: 0, scored: 0, errors: [], ms: 0 };
+  let toScoreTotal = 0;
+  const progress = (stage: HuntStage) =>
+    query("UPDATE hunts SET progress = $2 WHERE id = $1", [huntId, JSON.stringify({ stage, ...stats, toScore: toScoreTotal, errors: stats.errors.length })]).catch(() => {});
 
+  await progress("planning");
   const queries = [...baseQueries(profile), ...(await plannedQueries(profile))];
   stats.queries = queries.length;
+  await progress("searching");
   const searched = await pool(queries, 5, async (q) => {
     const results = await tavilySearch({ query: q.query, includeDomains: q.includeDomains, excludeDomains: q.excludeDomains, maxResults: 5, timeRange: q.timeRange });
     return results.map((r) => ({ ...r, q }));
@@ -179,6 +210,7 @@ export async function runHunt(userId: string, trigger: "manual" | "schedule", op
 
   const fresh = roundRobin([...byUrl.values()].filter((r) => !knownUrls.has(r.url)), maxNew);
   stats.newPages = fresh.length;
+  await progress("reading");
 
   const needText = fresh.filter((r) => !r.raw_content || r.raw_content.length < 400).map((r) => r.url);
   if (needText.length) {
@@ -196,9 +228,11 @@ export async function runHunt(userId: string, trigger: "manual" | "schedule", op
     .filter((k) => !scoredAlready.has(k.id) && k.extracted.isSingleOpportunity && k.extracted.openStatus !== "closed")
     .map((k) => ({ id: k.id, extracted: k.extracted }));
 
+  await progress("verifying");
   const extractedResults = await pool(fresh, 4, async (r) => {
-    const { extracted, model } = await extractOpportunity({ url: r.url, title: r.title, text: r.raw_content || r.content });
+    const { extracted, model } = await withTrace({ subject: r.url }, () => extractOpportunity({ url: r.url, title: r.title, text: r.raw_content || r.content }));
     stats.extracted++;
+    await progress("verifying");
     const row = await one<{ id: number }>(
       `INSERT INTO opportunities (url, title, source, kind, snippet, extracted, deadline_at, found_by_query, model)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -211,15 +245,23 @@ export async function runHunt(userId: string, trigger: "manual" | "schedule", op
   });
   for (const e of extractedResults) if (e.status === "rejected") stats.errors.push(String(e.reason).slice(0, 200));
 
+  toScoreTotal = toScore.length;
+  await progress("scoring");
   const scoredResults = await pool(toScore, 4, async (o) => {
     await scoreForUser(userId, o.id, o.extracted, profile);
     stats.scored++;
+    await progress("scoring");
   });
   for (const e of scoredResults) if (e.status === "rejected") stats.errors.push(String(e.reason).slice(0, 200));
 
   stats.ms = Date.now() - started;
   stats.errors = stats.errors.slice(0, 10);
-  await query("INSERT INTO hunts (user_id, trigger, queries, stats) VALUES ($1, $2, $3, $4)", [userId, trigger, JSON.stringify(queries), JSON.stringify(stats)]);
+  await query("UPDATE hunts SET status = 'done', queries = $2, stats = $3, progress = $4, finished_at = now() WHERE id = $1", [
+    huntId,
+    JSON.stringify(queries),
+    JSON.stringify(stats),
+    JSON.stringify({ stage: "done", ...stats, toScore: toScoreTotal, errors: stats.errors.length }),
+  ]);
   await query("INSERT INTO events (user_id, action, note) VALUES ($1, 'hunt', $2)", [userId, `${stats.scored} scored from ${stats.results} results`]);
-  return { stats, queries };
+  return { stats, queries, huntId };
 }

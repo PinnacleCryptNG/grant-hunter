@@ -1,4 +1,5 @@
 import { chatJson } from "./llm";
+import { EXTRACT_SCHEMA } from "./schemas";
 import { markdownToText } from "./text";
 import type { Extracted, Field } from "./types";
 
@@ -74,6 +75,8 @@ export async function extractOpportunity(page: { url: string; title: string; tex
   const today = new Date().toISOString().slice(0, 10);
   const { data, model } = await chatJson<Partial<Extracted>>({
     model: "nano",
+    op: "extract",
+    schema: EXTRACT_SCHEMA,
     maxTokens: 1800,
     temperature: 0,
     system: SYSTEM,

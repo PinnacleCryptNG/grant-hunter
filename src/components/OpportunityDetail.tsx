@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ArrowLeft, BrainCircuit, Check, Copy, ExternalLink, Gauge, Link2, Loader2, PenLine, ShieldCheck } from "lucide-react";
+import { Activity, ArrowLeft, BrainCircuit, Check, Copy, Cpu, ExternalLink, Gauge, Globe, Link2, Loader2, PenLine, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Analysis } from "@/lib/draft";
@@ -9,6 +9,17 @@ import { markdownToText } from "@/lib/text";
 import type { Extracted, Field, OpportunityRow, Profile, Status } from "@/lib/types";
 import { Countdown } from "./Countdown";
 import { ScoreBadge } from "./ScoreBadge";
+
+type TraceStep = { kind: "llm" | "tavily"; op: string; model: string | null; prompt_tokens: number | null; completion_tokens: number | null; ms: number; ok: boolean; detail: string | null; created_at: string };
+
+const OP_LABEL: Record<string, string> = {
+  extract: "Read the page and extracted the terms",
+  score: "Scored fit against your profile",
+  analyze: "Deep fit analysis",
+  draft: "Wrote a draft",
+  digest: "Ranked for the daily digest",
+  search: "Tavily search",
+};
 
 type Draft = { id: number; content: string; model: string | null; approved: boolean; created_at: string };
 type Detail = OpportunityRow & { analysis: (Analysis & { model: string; createdAt: string }) | null };
@@ -29,6 +40,7 @@ const sev = { high: "bg-rose-400/10 text-rose-300 ring-rose-400/25", medium: "bg
 export function OpportunityDetail({ id }: { id: number }) {
   const [opp, setOpp] = useState<Detail | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [trace, setTrace] = useState<TraceStep[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -45,6 +57,7 @@ export function OpportunityDetail({ id }: { id: number }) {
     const data = await res.json();
     setOpp(data.opportunity);
     setDrafts(data.drafts);
+    setTrace(data.trace ?? []);
     setFeedback(data.opportunity.feedback ?? "");
   }, [id]);
 
@@ -276,6 +289,31 @@ export function OpportunityDetail({ id }: { id: number }) {
               <li className="text-xs text-fg/50" suppressHydrationWarning>First seen {new Date(opp.created_at).toLocaleString()} · extracted by {opp.model}</li>
             </ul>
           </section>
+          {trace.length > 0 && (
+            <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
+              <h2 className="flex items-center gap-2 font-semibold"><Activity className="h-4 w-4 text-lime" />Agent trace</h2>
+              <p className="mt-1 text-xs text-fg/50">Every Nemotron and Tavily call made for this opportunity.</p>
+              <ol className="mt-3 space-y-3 border-l border-white/10 pl-4">
+                {trace.map((t, i) => (
+                  <li key={i} className="relative text-sm">
+                    <span className={`absolute -left-[21px] top-1.5 h-2 w-2 rounded-full ${t.ok ? "bg-lime" : "bg-rose-400"}`} />
+                    <p className="flex items-center gap-1.5 font-medium">
+                      {t.kind === "llm" ? <Cpu className="h-3.5 w-3.5 text-fg/50" /> : <Globe className="h-3.5 w-3.5 text-fg/50" />}
+                      {OP_LABEL[t.op] ?? t.op}
+                      {!t.ok && <span className="text-xs font-normal text-rose-300">failed</span>}
+                    </p>
+                    <p className="mt-0.5 font-mono text-[11px] text-fg/45">
+                      {t.kind === "llm" ? (t.model?.split("/").pop() ?? "Nemotron") : "Tavily"}
+                      {" · "}
+                      {(t.ms / 1000).toFixed(1)}s
+                      {t.prompt_tokens != null && ` · ${t.prompt_tokens + (t.completion_tokens ?? 0)} tokens`}
+                      {t.kind === "llm" && t.detail === "schema" && " · structured output"}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
         </aside>
       </div>
     </div>

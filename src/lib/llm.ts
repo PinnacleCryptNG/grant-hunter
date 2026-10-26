@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import type { JsonSchema } from "./schemas";
+import { timed } from "./trace";
 
 /** Every LLM call in Grant Hunter goes through Nebius Token Factory's OpenAI-compatible API. */
 export const TOKEN_FACTORY_BASE_URL = process.env.NEBIUS_BASE_URL || "https://api.tokenfactory.nebius.com/v1/";
@@ -69,6 +71,10 @@ type ChatOpts = {
   system: string;
   user: string;
   json?: boolean;
+  /** Strict structured output; chatJson falls back to JSON mode if the model rejects it. */
+  schema?: JsonSchema;
+  /** Step name shown in the agent trace, e.g. "extract" or "score". */
+  op?: string;
   maxTokens?: number;
   temperature?: number;
   thinking?: boolean;
@@ -85,19 +91,31 @@ function reasoningSwitch(name: string, thinking: boolean) {
   return null;
 }
 
-export async function chat({ model, system, user, json, maxTokens = 2048, temperature = 0.2, thinking = false }: ChatOpts) {
+export function responseFormat(json?: boolean, schema?: JsonSchema) {
+  if (schema) return { response_format: { type: "json_schema" as const, json_schema: { name: schema.name, schema: schema.schema, strict: true } } };
+  if (json) return { response_format: { type: "json_object" as const } };
+  return {};
+}
+
+export async function chat({ model, system, user, json, schema, op, maxTokens = 2048, temperature = 0.2, thinking = false }: ChatOpts) {
   const name = (await resolveModels())[model];
   const sw = reasoningSwitch(name, thinking);
-  const res = await tokenFactory().chat.completions.create({
-    model: name,
-    temperature,
-    max_tokens: maxTokens,
-    messages: [
-      { role: "system", content: sw ? `${sw}\n\n${system}` : system },
-      { role: "user", content: user },
-    ],
-    ...(json ? { response_format: { type: "json_object" as const } } : {}),
-  });
+  const mode = schema ? "schema" : json ? "json" : "text";
+  const res = await timed(
+    { kind: "llm", op: op ?? model, model: name, detail: mode },
+    () =>
+      tokenFactory().chat.completions.create({
+        model: name,
+        temperature,
+        max_tokens: maxTokens,
+        messages: [
+          { role: "system", content: sw ? `${sw}\n\n${system}` : system },
+          { role: "user", content: user },
+        ],
+        ...responseFormat(json, schema),
+      }),
+    (r) => ({ promptTokens: r.usage?.prompt_tokens, completionTokens: r.usage?.completion_tokens }),
+  );
   const text = stripThinking(res.choices[0]?.message?.content ?? "");
   return { text, model: name, usage: res.usage };
 }
@@ -114,15 +132,22 @@ export function parseJson<T>(text: string): T {
   }
 }
 
+/** Models that rejected json_schema; they go straight to JSON mode afterwards. */
+const noSchema = new Set<string>();
+
 export async function chatJson<T>(opts: Omit<ChatOpts, "json">): Promise<{ data: T; model: string }> {
+  const name = (await resolveModels())[opts.model];
+  const modes: ("schema" | "json" | "text")[] = opts.schema && !noSchema.has(name) ? ["schema", "json", "text"] : ["json", "text"];
   let lastErr: unknown;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (const mode of modes) {
     try {
-      // Second try without response_format, in case the model rejects JSON mode; the prompt still asks for JSON.
-      const { text, model } = await chat({ ...opts, json: attempt === 0 });
+      // Fall back from strict schema to JSON mode to plain text; the prompt always asks for JSON.
+      const { text, model } = await chat({ ...opts, schema: mode === "schema" ? opts.schema : undefined, json: mode === "json" });
       return { data: parseJson<T>(text), model };
     } catch (e) {
       lastErr = e;
+      const status = (e as { status?: number }).status;
+      if (mode === "schema" && (status === 400 || status === 422)) noSchema.add(name);
     }
   }
   throw lastErr;

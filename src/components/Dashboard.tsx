@@ -17,10 +17,22 @@ type Sort = "score" | "deadline";
 const HUNT_STEPS = [
   "Planning searches from your profile with Nemotron Nano…",
   "Searching Superteam Earn, Devpost, Gitcoin, X and ecosystem pages with Tavily…",
-  "Reading pages and extracting reward, deadline, eligibility and payout…",
-  "Checking every fact against the source page…",
+  "Reading pages in full with Tavily…",
+  "Extracting reward, deadline, eligibility and payout, and checking every fact against the page…",
   "Scoring fit against your profile and memory with Nemotron Super…",
 ];
+const STAGES = ["planning", "searching", "reading", "verifying", "scoring"];
+
+type HuntProgress = { stage: string; results?: number; newPages?: number; extracted?: number; scored?: number; toScore?: number };
+type HuntState = { id: number; status: "running" | "done" | "failed"; progress: HuntProgress | null; stats: { ms: number; results: number; extracted: number; scored: number; skippedListing: number; skippedClosed: number } | null; error: string | null };
+
+function stepDetail(i: number, p: HuntProgress | null) {
+  if (!p) return null;
+  if (i === 1 && p.results) return `${p.results} pages found`;
+  if (i === 3 && p.newPages) return `${p.extracted ?? 0}/${p.newPages} checked`;
+  if (i === 4 && p.toScore) return `${p.scored ?? 0}/${p.toScore} scored`;
+  return null;
+}
 
 export function Dashboard() {
   const [items, setItems] = useState<OpportunityRow[] | null>(null);
@@ -29,7 +41,7 @@ export function Dashboard() {
   const [sort, setSort] = useState<Sort>("score");
   const [showClosed, setShowClosed] = useState(false);
   const [hunting, setHunting] = useState(false);
-  const [step, setStep] = useState(0);
+  const [progress, setProgress] = useState<HuntProgress | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<{ tokenFactory: { configured: boolean }; tavily: { configured: boolean } } | null>(null);
 
@@ -44,12 +56,45 @@ export function Dashboard() {
     fetch("/api/status").then((r) => r.json()).then(setStatus).catch(() => {});
   }, [load]);
 
+  const step = Math.max(0, STAGES.indexOf(progress?.stage ?? "planning"));
+
+  const follow = useCallback(
+    async (huntId: number) => {
+      setHunting(true);
+      setMessage(null);
+      try {
+        for (;;) {
+          const { hunt: h } = (await fetch(`/api/hunt?id=${huntId}`).then((r) => r.json())) as { hunt: HuntState | null };
+          if (!h) throw new Error("Hunt not found");
+          setProgress(h.progress);
+          if (h.status === "failed") throw new Error(h.error || "Hunt failed");
+          if (h.status === "done" && h.stats) {
+            const s = h.stats;
+            setMessage(`Done in ${Math.round(s.ms / 1000)}s: ${s.results} pages found, ${s.extracted} checked, ${s.scored} new matches scored${s.skippedListing ? `, ${s.skippedListing} listing pages skipped` : ""}${s.skippedClosed ? `, ${s.skippedClosed} closed skipped` : ""}.`);
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+        await load();
+      } catch (e) {
+        setMessage(String(e instanceof Error ? e.message : e));
+      } finally {
+        setHunting(false);
+        setProgress(null);
+      }
+    },
+    [load],
+  );
+
+  // Pick up a hunt that is still running, e.g. after a page refresh.
   useEffect(() => {
-    if (!hunting) return;
-    setStep(0);
-    const t = setInterval(() => setStep((s) => Math.min(s + 1, HUNT_STEPS.length - 1)), 9000);
-    return () => clearInterval(t);
-  }, [hunting]);
+    fetch("/api/hunt")
+      .then((r) => r.json())
+      .then((d: { hunt: HuntState | null }) => {
+        if (d.hunt?.status === "running") follow(d.hunt.id);
+      })
+      .catch(() => {});
+  }, [follow]);
 
   const needsProfile = profile !== null && !hasProfileSignal(profile);
 
@@ -58,19 +103,14 @@ export function Dashboard() {
       setMessage("Fill in your profile first: add at least one skill, interest or ecosystem.");
       return;
     }
-    setHunting(true);
     setMessage(null);
     try {
       const res = await fetch("/api/hunt", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Hunt failed");
-      const s = data.stats;
-      setMessage(`Done in ${Math.round(s.ms / 1000)}s: ${s.results} pages found, ${s.extracted} checked, ${s.scored} new matches scored${s.skippedListing ? `, ${s.skippedListing} listing pages skipped` : ""}${s.skippedClosed ? `, ${s.skippedClosed} closed skipped` : ""}.`);
-      await load();
+      await follow(data.huntId);
     } catch (e) {
       setMessage(String(e instanceof Error ? e.message : e));
-    } finally {
-      setHunting(false);
     }
   }
 
@@ -137,6 +177,7 @@ export function Dashboard() {
               <li key={s} className={`flex items-center gap-2 ${i < step ? "text-fg/40" : i === step ? "font-medium text-fg" : "text-fg/25"}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${i <= step ? "bg-lime" : "bg-white/20"} ${i === step ? "animate-pulse" : ""}`} />
                 {s}
+                {stepDetail(i, progress) && i <= step && <span className="font-mono text-[11px] text-lime/80">{stepDetail(i, progress)}</span>}
               </li>
             ))}
           </ol>

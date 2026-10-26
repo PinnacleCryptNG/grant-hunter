@@ -4,6 +4,8 @@ import { draftApplication, type DraftKind } from "@/lib/draft";
 import { llmConfigured } from "@/lib/llm";
 import { loadMemory } from "@/lib/memory";
 import { getOpportunity } from "@/lib/opportunities";
+import { guard } from "@/lib/ratelimit";
+import { withTrace } from "@/lib/trace";
 import { currentUserId, getProfile } from "@/lib/user";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +17,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const id = Number((await params).id);
   const opp = await getOpportunity(uid, id);
   if (!opp) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const limited = await guard(req, uid, "llm");
+  if (limited) return limited;
   const body = (await req.json().catch(() => ({}))) as { kind?: DraftKind; notes?: string };
   const kind: DraftKind = body.kind === "pitch" || body.kind === "tweet" ? body.kind : "application";
   try {
-    const { text, model } = await draftApplication(opp.extracted, opp.url, await getProfile(uid), await loadMemory(uid), kind, body.notes?.slice(0, 800));
+    const [profile, memory] = await Promise.all([getProfile(uid), loadMemory(uid)]);
+    const { text, model } = await withTrace({ userId: uid, subject: `opp:${id}` }, () => draftApplication(opp.extracted, opp.url, profile, memory, kind, body.notes?.slice(0, 800)));
     const row = await one("INSERT INTO drafts (user_id, opportunity_id, content, model) VALUES ($1, $2, $3, $4) RETURNING id, content, model, approved, created_at", [uid, id, text, model]);
     await query("INSERT INTO events (user_id, opportunity_id, action) VALUES ($1, $2, $3)", [uid, id, `draft:${kind}`]);
     return NextResponse.json({ draft: row });

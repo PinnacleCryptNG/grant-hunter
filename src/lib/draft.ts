@@ -21,6 +21,7 @@ export async function draftApplication(x: Extracted, url: string, profile: Profi
         : "A full application: Title, One-liner, About me, Why this opportunity, What I'll build/deliver (with milestones if a grant), Relevant work (portfolio links), Timeline, Budget/Reward ask if relevant, Links.";
   return chat({
     model: "ultra",
+    op: "draft",
     thinking: false,
     maxTokens: 2200,
     temperature: 0.6,
@@ -42,6 +43,7 @@ export type Analysis = {
 export async function analyzeFit(x: Extracted, profile: Profile, memory: Memory) {
   return chatJson<Analysis>({
     model: "ultra",
+    op: "analyze",
     thinking: true,
     maxTokens: 4000,
     temperature: 0.3,

@@ -1,4 +1,5 @@
 import { chatJson } from "./llm";
+import { SCORE_SCHEMA } from "./schemas";
 import type { Extracted, Profile, Risk, Scoring } from "./types";
 
 export type Memory = { liked: string[]; rejected: { title: string; note: string | null }[]; applied: string[] };
@@ -81,6 +82,8 @@ export async function scoreOpportunity(x: Extracted, profile: Profile, memory: M
   const now = new Date().toISOString();
   const { data, model } = await chatJson<Scoring>({
     model: "super",
+    op: "score",
+    schema: SCORE_SCHEMA,
     maxTokens: 1200,
     temperature: 0.1,
     system: SYSTEM,

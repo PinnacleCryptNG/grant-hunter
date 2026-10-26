@@ -70,5 +70,33 @@ CREATE TABLE IF NOT EXISTS digests (
 );
 CREATE INDEX IF NOT EXISTS idx_uo_user ON user_opportunities(user_id, score DESC);
 CREATE INDEX IF NOT EXISTS idx_events_user ON events(user_id, created_at DESC);
-ALTER TABLE user_opportunities ADD COLUMN IF NOT EXISTS analysis JSONB
+ALTER TABLE user_opportunities ADD COLUMN IF NOT EXISTS analysis JSONB;
+ALTER TABLE hunts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'done';
+ALTER TABLE hunts ADD COLUMN IF NOT EXISTS progress JSONB;
+ALTER TABLE hunts ADD COLUMN IF NOT EXISTS error TEXT;
+ALTER TABLE hunts ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_hunts_user ON hunts(user_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT NOT NULL,
+  window_start BIGINT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (key, window_start)
+);
+CREATE TABLE IF NOT EXISTS agent_steps (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT,
+  hunt_id INTEGER,
+  subject TEXT,
+  kind TEXT NOT NULL,
+  op TEXT NOT NULL,
+  model TEXT,
+  prompt_tokens INTEGER,
+  completion_tokens INTEGER,
+  ms INTEGER NOT NULL,
+  ok BOOLEAN NOT NULL,
+  detail TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_steps_subject ON agent_steps(subject);
+CREATE INDEX IF NOT EXISTS idx_steps_hunt ON agent_steps(hunt_id)
 `;
