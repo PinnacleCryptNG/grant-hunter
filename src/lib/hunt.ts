@@ -7,7 +7,7 @@ import { tavilyExtract, tavilySearch, type TavilyResult } from "./tavily";
 import type { Extracted, Profile } from "./types";
 import { getProfile } from "./user";
 
-export type HuntQuery = { query: string; includeDomains?: string[]; source: string };
+export type HuntQuery = { query: string; includeDomains?: string[]; excludeDomains?: string[]; timeRange?: "week" | "month" | "year"; source: string };
 
 export type HuntStats = {
   queries: number;
@@ -21,17 +21,54 @@ export type HuntStats = {
   ms: number;
 };
 
-const SOURCES: { source: string; domains: string[]; build: (p: Profile) => string }[] = [
-  { source: "Superteam Earn", domains: ["earn.superteam.fun"], build: (p) => `Superteam Earn open bounty ${p.skills.slice(0, 2).join(" ")}` },
+/** Social feeds and video sites rarely contain verifiable terms; X is searched separately. */
+const NOISY_DOMAINS = ["instagram.com", "facebook.com", "tiktok.com", "youtube.com", "linkedin.com", "pinterest.com", "threads.net"];
+
+const SOURCES: { source: string; domains: string[]; timeRange?: HuntQuery["timeRange"]; build: (p: Profile) => string }[] = [
+  // Listing sites keep pages live until the deadline, so no recency filter there.
+  { source: "Superteam Earn", domains: ["earn.superteam.fun"], build: (p) => `Superteam Earn listing bounty ${p.skills.slice(0, 2).join(" ")}` },
   { source: "Devpost", domains: ["devpost.com"], build: (p) => `online hackathon open for submissions ${p.interests[0] ?? "AI"} prizes` },
-  { source: "Gitcoin", domains: ["gitcoin.co", "grants.gitcoin.co", "explorer.gitcoin.co"], build: () => "Gitcoin grants round open applications" },
-  { source: "X announcements", domains: ["x.com", "twitter.com"], build: (p) => `announcing grant program OR bounty OR hackathon ${p.ecosystems.slice(0, 2).join(" OR ")} apply` },
-  { source: "Ecosystem grants", domains: [], build: (p) => `${p.ecosystems[0] ?? "open source"} ecosystem grants program apply now ${new Date().getFullYear()}` },
-  { source: "Creator contests", domains: [], build: (p) => `creator contest open submissions prize ${p.interests.slice(0, 2).join(" ")} ${new Date().getFullYear()}` },
+  { source: "Gitcoin", domains: ["gitcoin.co", "grants.gitcoin.co", "explorer.gitcoin.co"], timeRange: "month", build: () => "Gitcoin grants round open applications" },
+  { source: "X announcements", domains: ["x.com", "twitter.com"], timeRange: "month", build: (p) => `announcing grant program OR bounty OR hackathon ${p.ecosystems.slice(0, 2).join(" OR ")} apply` },
+  { source: "Ecosystem grants", domains: [], timeRange: "month", build: (p) => `${p.ecosystems[0] ?? "open source"} ecosystem grants program apply now ${new Date().getFullYear()}` },
+  { source: "Creator contests", domains: [], timeRange: "month", build: (p) => `creator contest open submissions prize ${p.interests.slice(0, 2).join(" ")} ${new Date().getFullYear()}` },
 ];
 
 export function baseQueries(p: Profile): HuntQuery[] {
-  return SOURCES.map((s) => ({ source: s.source, query: s.build(p), includeDomains: s.domains.length ? s.domains : undefined }));
+  return SOURCES.map((s) => ({
+    source: s.source,
+    query: s.build(p),
+    includeDomains: s.domains.length ? s.domains : undefined,
+    excludeDomains: s.domains.length ? undefined : NOISY_DOMAINS,
+    timeRange: s.timeRange,
+  }));
+}
+
+/** Skip pages that are clearly not an opportunity's own page (galleries, forums, profiles). */
+export function isCandidateUrl(u: string) {
+  try {
+    const url = new URL(u);
+    const host = url.hostname.replace(/^www\./, "");
+    const path = url.pathname;
+    if (NOISY_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return false;
+    // Devpost hackathons live on their own subdomain; devpost.com itself is listings and profiles.
+    if (host === "devpost.com") return false;
+    if (host.endsWith(".devpost.com")) return !/^\/(project-gallery|forum_topics|submissions|participants|updates)\b/.test(path);
+    if (host === "earn.superteam.fun") return /^\/listings?\//.test(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Take the best results from each query in turn so one noisy source cannot crowd out the rest. */
+export function roundRobin<T extends { score: number; q: HuntQuery }>(items: T[], limit: number) {
+  const groups = new Map<string, T[]>();
+  for (const it of items) groups.set(it.q.query, [...(groups.get(it.q.query) ?? []), it]);
+  const queues = [...groups.values()].map((g) => g.sort((a, b) => b.score - a.score));
+  const out: T[] = [];
+  while (out.length < limit && queues.some((q) => q.length)) for (const q of queues) if (q.length && out.length < limit) out.push(q.shift()!);
+  return out;
 }
 
 /** Nemotron Nano plans extra profile-specific searches on top of the fixed sources. */
@@ -44,7 +81,7 @@ async function plannedQueries(p: Profile): Promise<HuntQuery[]> {
       system: "You write web search queries that find currently OPEN grants, bounties, hackathons and creator contests for one person. Return JSON {\"queries\": [3 short search queries]}.",
       user: `Year: ${new Date().getFullYear()}. Skills: ${p.skills.join(", ")}. Ecosystems: ${p.ecosystems.join(", ")}. Interests: ${p.interests.join(", ")}. Country: ${p.country}.`,
     });
-    return (data.queries ?? []).filter((q) => typeof q === "string").slice(0, 3).map((q) => ({ query: q, source: "Agent-planned" }));
+    return (data.queries ?? []).filter((q) => typeof q === "string").slice(0, 3).map((q) => ({ query: q, source: "Agent-planned", excludeDomains: NOISY_DOMAINS, timeRange: "month" as const }));
   } catch {
     return [];
   }
@@ -72,7 +109,7 @@ export function normalizeUrl(u: string) {
   try {
     const url = new URL(u);
     url.hash = "";
-    for (const k of [...url.searchParams.keys()]) if (/^utm_|^ref$|^s$|^t$/.test(k)) url.searchParams.delete(k);
+    for (const k of [...url.searchParams.keys()]) if (/^utm_|^ref(_|$)|^s$|^t$/.test(k)) url.searchParams.delete(k);
     return url.toString().replace(/\/$/, "");
   } catch {
     return u;
@@ -110,7 +147,7 @@ export async function runHunt(userId: string, trigger: "manual" | "schedule", op
   const queries = [...baseQueries(profile), ...(await plannedQueries(profile))];
   stats.queries = queries.length;
   const searched = await pool(queries, 5, async (q) => {
-    const results = await tavilySearch({ query: q.query, includeDomains: q.includeDomains, maxResults: 5, timeRange: "month" });
+    const results = await tavilySearch({ query: q.query, includeDomains: q.includeDomains, excludeDomains: q.excludeDomains, maxResults: 5, timeRange: q.timeRange });
     return results.map((r) => ({ ...r, q }));
   });
 
@@ -121,6 +158,7 @@ export async function runHunt(userId: string, trigger: "manual" | "schedule", op
       continue;
     }
     for (const r of s.value) {
+      if (!isCandidateUrl(r.url)) continue;
       const url = normalizeUrl(r.url);
       const prev = byUrl.get(url);
       if (!prev || r.score > prev.score) byUrl.set(url, { ...r, url });
@@ -137,7 +175,7 @@ export async function runHunt(userId: string, trigger: "manual" | "schedule", op
     (await query<{ opportunity_id: number }>("SELECT opportunity_id FROM user_opportunities WHERE user_id = $1", [userId])).map((r) => r.opportunity_id),
   );
 
-  const fresh = [...byUrl.values()].filter((r) => !knownUrls.has(r.url)).sort((a, b) => b.score - a.score).slice(0, maxNew);
+  const fresh = roundRobin([...byUrl.values()].filter((r) => !knownUrls.has(r.url)), maxNew);
   stats.newPages = fresh.length;
 
   const needText = fresh.filter((r) => !r.raw_content || r.raw_content.length < 400).map((r) => r.url);

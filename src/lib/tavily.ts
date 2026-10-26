@@ -27,17 +27,19 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
 export type SearchOpts = {
   query: string;
   includeDomains?: string[];
+  excludeDomains?: string[];
   maxResults?: number;
   timeRange?: "day" | "week" | "month" | "year";
 };
 
-export async function tavilySearch({ query, includeDomains, maxResults = 6, timeRange }: SearchOpts) {
+export async function tavilySearch({ query, includeDomains, excludeDomains, maxResults = 6, timeRange }: SearchOpts) {
   const data = await post<{ results: TavilyResult[] }>("/search", {
     query,
     search_depth: "advanced",
     max_results: maxResults,
     include_raw_content: "markdown",
     ...(includeDomains?.length ? { include_domains: includeDomains } : {}),
+    ...(excludeDomains?.length ? { exclude_domains: excludeDomains } : {}),
     ...(timeRange ? { time_range: timeRange } : {}),
   });
   return data.results ?? [];
