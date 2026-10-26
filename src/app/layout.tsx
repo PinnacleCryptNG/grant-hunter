@@ -1,23 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Bricolage_Grotesque, Inter } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display-face" });
 
 export const metadata: Metadata = {
-  title: "Grant Hunter — your personal AI agent for grants, bounties & hackathons",
-  description: "Finds, verifies and scores grants, bounties, hackathons and creator contests for you, then drafts tailored applications. Powered by NVIDIA Nemotron on Nebius Token Factory and Tavily search.",
+  title: "Grant Hunter: an AI agent that finds grants, bounties and hackathons for you",
+  description: "Grant Hunter searches the web daily for grants, bounties, hackathons and creator contests, checks the terms against the source, scores each one against your profile and drafts your application. Powered by NVIDIA Nemotron on Nebius Token Factory and Tavily.",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#ffffff" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f6f7f3" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} min-h-dvh bg-slate-50 font-sans text-slate-900 antialiased`}>
+      <body className={`${inter.variable} ${display.variable} min-h-dvh bg-paper font-sans text-ink antialiased`}>
         <Nav />
-        <main className="mx-auto max-w-5xl px-4 pb-28 pt-5 sm:pb-12">{children}</main>
+        {children}
       </body>
     </html>
   );

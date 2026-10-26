@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { ArrowLeft, BrainCircuit, Check, Copy, ExternalLink, Gauge, Link2, Loader2, PenLine, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Analysis } from "@/lib/draft";
@@ -23,7 +24,7 @@ const FIELDS: { key: keyof Extracted; label: string }[] = [
   { key: "howToApply", label: "How to apply" },
 ];
 
-const sev = { high: "bg-rose-50 text-rose-800 ring-rose-200", medium: "bg-amber-50 text-amber-900 ring-amber-200", low: "bg-slate-50 text-slate-700 ring-slate-200" };
+const sev = { high: "bg-rose-50 text-rose-800 ring-rose-200", medium: "bg-amber-50 text-amber-900 ring-amber-200", low: "bg-paper text-slate-700 ring-ink/10" };
 
 export function OpportunityDetail({ id }: { id: number }) {
   const [opp, setOpp] = useState<Detail | null>(null);
@@ -105,8 +106,8 @@ export function OpportunityDetail({ id }: { id: number }) {
     setTimeout(() => setCopied(null), 1500);
   }
 
-  if (missing) return <p className="text-sm text-slate-600">Opportunity not found. <Link className="underline" href="/">Back</Link></p>;
-  if (!opp) return <div className="h-64 animate-pulse rounded-2xl bg-white ring-1 ring-slate-200" />;
+  if (missing) return <p className="text-sm text-slate-600">Opportunity not found. <Link className="underline" href="/dashboard">Back</Link></p>;
+  if (!opp) return <div className="h-64 animate-pulse rounded-2xl bg-white ring-1 ring-ink/10" />;
 
   const x = opp.extracted;
   const tz = profile?.timezone ?? "UTC";
@@ -115,17 +116,17 @@ export function OpportunityDetail({ id }: { id: number }) {
 
   return (
     <div className="space-y-5">
-      <Link href="/" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
-        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path d="M12.7 4.3a1 1 0 010 1.4L8.4 10l4.3 4.3a1 1 0 01-1.4 1.4l-5-5a1 1 0 010-1.4l5-5a1 1 0 011.4 0z" /></svg>
+      <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-ink">
+        <ArrowLeft className="h-4 w-4" />
         All opportunities
       </Link>
 
-      <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
         <div className="flex gap-4">
           <ScoreBadge score={opp.score} size={64} />
           <div className="min-w-0 flex-1">
             <p className="text-xs text-slate-500"><span className="font-medium capitalize text-slate-700">{opp.kind}</span> · {opp.source}</p>
-            <h1 className="mt-1 text-xl font-semibold leading-snug tracking-tight">{opp.title}</h1>
+            <h1 className="mt-1 text-xl font-semibold leading-snug sm:text-2xl">{opp.title}</h1>
             {x.summary && <p className="mt-2 text-sm text-slate-600">{markdownToText(x.summary)}</p>}
           </div>
         </div>
@@ -135,15 +136,15 @@ export function OpportunityDetail({ id }: { id: number }) {
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(["new", "saved", "applied", "rejected"] as Status[]).map((s) => (
-            <button key={s} onClick={() => setStatus(s)} aria-pressed={opp.status === s} className={`rounded-xl px-3 py-2 text-sm font-medium capitalize ring-1 ${opp.status === s ? "bg-slate-900 text-white ring-slate-900" : "text-slate-700 ring-slate-200 hover:bg-slate-50"}`}>
-              {s === "rejected" ? "Not for me" : s === "new" ? "New" : s}
+            <button key={s} onClick={() => setStatus(s)} aria-pressed={opp.status === s} className={`rounded-xl px-3 py-2 text-sm font-medium ring-1 ${opp.status === s ? "bg-ink text-white ring-ink" : "text-slate-700 ring-ink/10 hover:bg-slate-50"}`}>
+              {{ new: "New", saved: "Saved", applied: "Applied", rejected: "Not for me" }[s]}
             </button>
           ))}
         </div>
         <label className="mt-3 block text-xs font-medium text-slate-500">
           Note for the agent (why you like or reject this; it learns from it)
           <div className="mt-1 flex gap-2">
-            <input value={feedback} onChange={(e) => setFeedback(e.target.value)} onBlur={saveFeedback} placeholder="e.g. paid in an illiquid token, too much work for the reward" className="w-full rounded-lg border-0 bg-slate-50 px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-900" />
+            <input value={feedback} onChange={(e) => setFeedback(e.target.value)} onBlur={saveFeedback} placeholder="e.g. paid in an illiquid token, too much work for the reward" className="w-full rounded-lg border-0 bg-paper px-3 py-2 text-sm text-ink ring-1 ring-ink/10 focus:ring-2 focus:ring-emerald-500" />
           </div>
         </label>
       </section>
@@ -152,9 +153,9 @@ export function OpportunityDetail({ id }: { id: number }) {
 
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold">Why this score</h2>
+              <h2 className="flex items-center gap-2 font-semibold"><Gauge className="h-4 w-4 text-emerald-600" />Why this score</h2>
               <button onClick={rescore} disabled={!!busy} className="text-xs font-medium text-slate-500 underline-offset-2 hover:underline disabled:opacity-50">{busy === "rescore" ? "Rescoring…" : "Rescore with latest profile"}</button>
             </div>
             {opp.scoring?.verdict && <p className="mt-2 text-sm text-slate-700">{opp.scoring.verdict}</p>}
@@ -178,10 +179,10 @@ export function OpportunityDetail({ id }: { id: number }) {
             <p className="mt-3 text-[11px] text-slate-400">Scored by {opp.scoring_model ?? "Nemotron"} via Nebius Token Factory</p>
           </section>
 
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold">Deep fit analysis</h2>
-              <button onClick={analyze} disabled={!!busy} className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+              <h2 className="flex items-center gap-2 font-semibold"><BrainCircuit className="h-4 w-4 text-emerald-600" />Deep fit analysis</h2>
+              <button onClick={analyze} disabled={!!busy} className="rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
                 {busy === "analyze" ? "Nemotron Ultra is thinking…" : opp.analysis ? "Re-run" : "Run with Nemotron Ultra"}
               </button>
             </div>
@@ -201,33 +202,33 @@ export function OpportunityDetail({ id }: { id: number }) {
             )}
           </section>
 
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
-            <h2 className="font-semibold">Draft with Nemotron Ultra</h2>
-            <p className="mt-1 text-sm text-slate-500">Uses your profile and portfolio only. Nothing is submitted: review, approve, copy and submit it yourself.</p>
+          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+            <h2 className="flex items-center gap-2 font-semibold"><PenLine className="h-4 w-4 text-emerald-600" />Draft with Nemotron Ultra</h2>
+            <p className="mt-1 text-sm text-slate-500">Written from your profile and portfolio only. Nothing is sent: edit it, approve it, then copy it and submit it yourself.</p>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {(["application", "pitch", "tweet"] as const).map((k) => (
-                <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k} className={`rounded-lg px-2 py-1.5 text-sm font-medium capitalize ring-1 ${kind === k ? "bg-slate-900 text-white ring-slate-900" : "text-slate-700 ring-slate-200"}`}>
+                <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k} className={`rounded-lg px-2 py-1.5 text-sm font-medium capitalize ring-1 ${kind === k ? "bg-ink text-white ring-ink" : "text-slate-700 ring-ink/10"}`}>
                   {k === "tweet" ? "X thread" : k}
                 </button>
               ))}
             </div>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional: what you want to build or emphasise" className="mt-2 w-full rounded-lg border-0 bg-slate-50 px-3 py-2 text-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-900" />
-            <button onClick={draft} disabled={!!busy} className="mt-2 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
-              {busy === "draft" ? "Drafting… (Ultra takes ~30-60s)" : "Generate draft"}
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional: what you want to build or emphasise" className="mt-2 w-full rounded-lg border-0 bg-paper px-3 py-2 text-sm ring-1 ring-ink/10 focus:ring-2 focus:ring-emerald-500" />
+            <button onClick={draft} disabled={!!busy} className="mt-2 w-full rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+              {busy === "draft" ? <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" /> : <PenLine className="mr-1.5 inline h-4 w-4" />}{busy === "draft" ? "Nemotron Ultra is writing…" : "Write a draft"}
             </button>
             <div className="mt-4 space-y-4">
               {drafts.map((d) => (
-                <article key={d.id} className={`rounded-xl p-4 ring-1 ${d.approved ? "ring-emerald-300" : "ring-slate-200"}`}>
+                <article key={d.id} className={`rounded-xl p-4 ring-1 ${d.approved ? "ring-emerald-300" : "ring-ink/10"}`}>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                     <span suppressHydrationWarning>{new Date(d.created_at).toLocaleString()} · {d.model}</span>
                     <div className="flex gap-1">
-                      <button onClick={() => setEditing(editing === d.id ? null : d.id)} className="rounded-md px-2 py-1 ring-1 ring-slate-200">{editing === d.id ? "Done" : "Edit"}</button>
-                      <button onClick={() => updateDraft(d, { approved: !d.approved })} className={`rounded-md px-2 py-1 ring-1 ${d.approved ? "bg-emerald-600 text-white ring-emerald-600" : "ring-slate-200"}`}>{d.approved ? "Approved" : "Approve"}</button>
-                      <button onClick={() => copy(d)} disabled={!d.approved} title={d.approved ? "Copy" : "Approve first"} className="rounded-md bg-slate-900 px-2 py-1 text-white disabled:opacity-40">{copied === d.id ? "Copied" : "Copy"}</button>
+                      <button onClick={() => setEditing(editing === d.id ? null : d.id)} className="rounded-md px-2 py-1 ring-1 ring-ink/10">{editing === d.id ? "Done" : "Edit"}</button>
+                      <button onClick={() => updateDraft(d, { approved: !d.approved })} className={`rounded-md px-2 py-1 ring-1 ${d.approved ? "bg-emerald-600 text-white ring-emerald-600" : "ring-ink/10"}`}>{d.approved ? "Approved" : "Approve"}</button>
+                      <button onClick={() => copy(d)} disabled={!d.approved} title={d.approved ? "Copy" : "Approve first"} className="inline-flex items-center gap-1 rounded-md bg-ink px-2 py-1 text-white disabled:opacity-40">{copied === d.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied === d.id ? "Copied" : "Copy"}</button>
                     </div>
                   </div>
                   {editing === d.id ? (
-                    <textarea defaultValue={d.content} rows={16} onBlur={(e) => updateDraft(d, { content: e.target.value })} className="w-full rounded-lg border-0 bg-slate-50 p-3 font-mono text-xs ring-1 ring-slate-200" />
+                    <textarea defaultValue={d.content} rows={16} onBlur={(e) => updateDraft(d, { content: e.target.value })} className="w-full rounded-lg border-0 bg-paper p-3 font-mono text-xs ring-1 ring-ink/10" />
                   ) : (
                     <div className="prose-draft text-sm text-slate-800"><ReactMarkdown>{d.content}</ReactMarkdown></div>
                   )}
@@ -238,16 +239,16 @@ export function OpportunityDetail({ id }: { id: number }) {
         </div>
 
         <aside className="space-y-5 lg:col-span-2">
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
-            <h2 className="font-semibold">Verified terms</h2>
-            <p className="mt-1 text-xs text-slate-500">Each value is backed by a quote found on the source page. Anything not stated is marked unknown.</p>
+          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+            <h2 className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4 text-emerald-600" />Verified terms</h2>
+            <p className="mt-1 text-xs text-slate-500">Every value comes with a quote found on the source page. Anything the page doesn&apos;t state is marked unknown.</p>
             <dl className="mt-3 divide-y divide-slate-100">
               {FIELDS.map(({ key, label }) => {
                 const f = x[key] as Field;
                 return (
                   <div key={key} className="py-2.5">
                     <dt className="text-xs font-medium text-slate-500">{label}</dt>
-                    <dd className={`mt-0.5 text-sm ${f.value === "unknown" ? "italic text-slate-400" : "text-slate-900"}`}>{markdownToText(f.value)}</dd>
+                    <dd className={`mt-0.5 text-sm ${f.value === "unknown" ? "italic text-slate-400" : "text-ink"}`}>{markdownToText(f.value)}</dd>
                     {f.evidence && <dd className="mt-1 border-l-2 border-slate-200 pl-2 text-xs text-slate-500">“{f.evidence}”</dd>}
                   </div>
                 );
@@ -264,11 +265,11 @@ export function OpportunityDetail({ id }: { id: number }) {
               )}
             </dl>
           </section>
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
-            <h2 className="font-semibold">Sources</h2>
+          <section className="rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+            <h2 className="flex items-center gap-2 font-semibold"><Link2 className="h-4 w-4 text-emerald-600" />Sources</h2>
             <ul className="mt-2 space-y-2 text-sm">
               <li>
-                <a href={opp.url} target="_blank" rel="noopener noreferrer" className="break-all font-medium text-sky-700 underline underline-offset-2">{hostOf(opp.url)}</a>
+                <a href={opp.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 break-all font-medium text-emerald-700 underline underline-offset-2">{hostOf(opp.url)}<ExternalLink className="h-3.5 w-3.5 shrink-0" /></a>
                 <span className="block break-all text-xs text-slate-500">{opp.url}</span>
               </li>
               {opp.found_by_query && <li className="text-xs text-slate-500">Found by Tavily search: “{opp.found_by_query}”</li>}

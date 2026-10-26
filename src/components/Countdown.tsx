@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Clock } from "lucide-react";
 import { timeLeft } from "@/lib/format";
 
 const tone = {
@@ -20,7 +21,7 @@ export function Countdown({ iso, className = "" }: { iso: string | null; classNa
   const t = timeLeft(iso, now ?? Date.now());
   return (
     <span suppressHydrationWarning className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset tabular-nums ${tone[t.urgency]} ${className}`}>
-      <svg aria-hidden viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="6.2" /><path d="M8 4.5V8l2.4 1.6" strokeLinecap="round" /></svg>
+      <Clock aria-hidden className="h-3 w-3" />
       {t.label}
     </span>
   );
