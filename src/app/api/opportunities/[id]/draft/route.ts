@@ -22,7 +22,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const body = (await req.json().catch(() => ({}))) as { kind?: DraftKind; notes?: string };
   const kind: DraftKind = body.kind === "pitch" || body.kind === "tweet" ? body.kind : "application";
   try {
-    const [profile, memory] = await Promise.all([getProfile(uid), loadMemory(uid)]);
+    const [profile, memory] = await Promise.all([getProfile(uid), withTrace({ userId: uid, subject: `opp:${id}` }, () => loadMemory(uid, Number(id)))]);
     const { text, model } = await withTrace({ userId: uid, subject: `opp:${id}` }, () => draftApplication(opp.extracted, opp.url, profile, memory, kind, body.notes?.slice(0, 800)));
     const row = await one("INSERT INTO drafts (user_id, opportunity_id, content, model) VALUES ($1, $2, $3, $4) RETURNING id, content, model, approved, created_at", [uid, id, text, model]);
     await query("INSERT INTO events (user_id, opportunity_id, action) VALUES ($1, $2, $3)", [uid, id, `draft:${kind}`]);

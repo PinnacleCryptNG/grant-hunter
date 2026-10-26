@@ -13,7 +13,11 @@ const FIELDS = ["organizer", "reward", "deadline", "eligibility", "eligibleCount
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 const tally: Record<string, [number, number]> = {};
-const check = (k: string, ok: boolean) => ((tally[k] ??= [0, 0]), tally[k][0] += ok ? 1 : 0, tally[k][1]++);
+function check(k: string, ok: boolean) {
+  tally[k] ??= [0, 0];
+  tally[k][0] += ok ? 1 : 0;
+  tally[k][1]++;
+}
 let stated = 0, grounded = 0, unknown = 0;
 const rows: unknown[] = [];
 

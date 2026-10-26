@@ -2,7 +2,8 @@ import { chatJson } from "./llm";
 import { SCORE_SCHEMA } from "./schemas";
 import type { Extracted, Profile, Risk, Scoring } from "./types";
 
-export type Memory = { liked: string[]; rejected: { title: string; note: string | null }[]; applied: string[] };
+export type SimilarDecision = { title: string; status: string; note: string | null; similarity: number };
+export type Memory = { liked: string[]; rejected: { title: string; note: string | null }[]; applied: string[]; similar?: SimilarDecision[] };
 
 /** Deterministic red flags derived from verified fields; the model can add more but cannot remove these. */
 export function ruleRisks(x: Extracted, profile: Profile): Risk[] {
@@ -47,6 +48,9 @@ function memoryBrief(m: Memory) {
     liked_or_saved: m.liked.slice(0, 10),
     applied: m.applied.slice(0, 10),
     rejected: m.rejected.slice(0, 10).map((r) => (r.note ? `${r.title} (reason: ${r.note})` : r.title)),
+    ...(m.similar?.length
+      ? { most_similar_past_decisions: m.similar.map((s) => `${s.status}: ${s.title} (similarity ${s.similarity.toFixed(2)}${s.note ? `, note: ${s.note}` : ""})`) }
+      : {}),
   });
 }
 
@@ -73,7 +77,7 @@ function opportunityBrief(x: Extracted) {
 
 const SYSTEM = `You are the scoring module of Grant Hunter, a personal agent that finds grants, bounties, hackathons and contests for one user.
 Score how good a fit the opportunity is for this user from 0 to 100.
-Consider: skill/ecosystem match, reward vs the user's minimum reward and hourly rate, payout method vs preferences, country eligibility, time left, clarity of terms, and the user's memory (things they liked, applied to, or rejected and why). Penalise opportunities similar to rejected ones.
+Consider: skill/ecosystem match, reward vs the user's minimum reward and hourly rate, payout method vs preferences, country eligibility, time left, clarity of terms, and the user's memory (things they liked, applied to, or rejected and why). Penalise opportunities similar to rejected ones and favour ones similar to saved or applied ones; most_similar_past_decisions (by embedding similarity, 1 = identical) shows the closest matches.
 Treat "unknown" fields as unknown: do not assume they are favourable. Never invent facts.
 Flag extra risks only when supported by the data: country_not_eligible, sponsor_token, entry_fee, unclear_terms, low_reward, skill_gap, short_deadline.
 Return JSON: {"score": integer 0-100, "verdict": string (one sentence), "reasons": [{"type":"plus"|"minus","text": string}] (3-6 items), "risks": [{"code": string, "label": string, "severity": "high"|"medium"|"low", "detail": string}]}`;

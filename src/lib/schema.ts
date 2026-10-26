@@ -98,5 +98,8 @@ CREATE TABLE IF NOT EXISTS agent_steps (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_steps_subject ON agent_steps(subject);
-CREATE INDEX IF NOT EXISTS idx_steps_hunt ON agent_steps(hunt_id)
+CREATE INDEX IF NOT EXISTS idx_steps_hunt ON agent_steps(hunt_id);
+ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS embedding JSONB;
+ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS checked_at TIMESTAMPTZ;
+ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS recheck_note TEXT
 `;

@@ -4,7 +4,7 @@ import { chatJson } from "./llm";
 import { loadMemory } from "./memory";
 import { PLAN_SCHEMA } from "./schemas";
 import { scoreOpportunity } from "./score";
-import { tavilyExtract, tavilySearch, type TavilyResult } from "./tavily";
+import { tavilyCrawl, tavilyExtract, tavilySearch, type TavilyResult } from "./tavily";
 import type { Extracted, Profile } from "./types";
 import { withTrace } from "./trace";
 import { getProfile } from "./user";
@@ -38,6 +38,19 @@ const SOURCES: { source: string; domains: string[]; timeRange?: HuntQuery["timeR
   { source: "Ecosystem grants", domains: [], timeRange: "month", build: (p) => `${p.ecosystems[0] ?? "open source"} ecosystem grants program apply now ${new Date().getFullYear()}` },
   { source: "Creator contests", domains: [], timeRange: "month", build: (p) => `creator contest open submissions prize ${p.interests.slice(0, 2).join(" ")} ${new Date().getFullYear()}` },
 ];
+
+/** Ecosystem grant hubs that Tavily Crawl can read (checked); matched against the profile's ecosystems. */
+const GRANT_HUBS: { name: string; match: RegExp; url: string }[] = [
+  { name: "Solana", match: /solana/i, url: "https://solana.org/grants-funding" },
+  { name: "Ethereum", match: /ethereum|\beth\b|evm/i, url: "https://esp.ethereum.foundation" },
+  { name: "Arbitrum", match: /arbitrum/i, url: "https://arbitrum.foundation/grants" },
+  { name: "Sui", match: /\bsui\b/i, url: "https://sui.io/grants-hub" },
+];
+const CRAWL_INSTRUCTIONS = "Pages describing a single grant program, RFP or open funding round, with amounts, eligibility and how to apply";
+
+export function grantHubsFor(p: Profile, max = 2) {
+  return GRANT_HUBS.filter((h) => p.ecosystems.some((e) => h.match.test(e))).slice(0, max);
+}
 
 export function baseQueries(p: Profile): HuntQuery[] {
   return SOURCES.map((s) => ({
@@ -136,7 +149,7 @@ function sourceFor(url: string, fallback: string) {
 
 export async function scoreForUser(userId: string, opportunityId: number, extracted: Extracted, profile?: Profile) {
   const p = profile ?? (await getProfile(userId));
-  const memory = await loadMemory(userId);
+  const memory = await withTrace({ userId, subject: `opp:${opportunityId}` }, () => loadMemory(userId, opportunityId));
   const { scoring, model } = await withTrace({ userId, subject: `opp:${opportunityId}` }, () => scoreOpportunity(extracted, p, memory));
   await query(
     `INSERT INTO user_opportunities (user_id, opportunity_id, score, scoring, model, updated_at)
@@ -179,10 +192,20 @@ async function hunt(userId: string, huntId: number, maxNew: number) {
   const queries = [...baseQueries(profile), ...(await plannedQueries(profile))];
   stats.queries = queries.length;
   await progress("searching");
-  const searched = await pool(queries, 5, async (q) => {
-    const results = await tavilySearch({ query: q.query, includeDomains: q.includeDomains, excludeDomains: q.excludeDomains, maxResults: 5, timeRange: q.timeRange });
-    return results.map((r) => ({ ...r, q }));
-  });
+  const hubs = grantHubsFor(profile);
+  stats.queries += hubs.length;
+  const [searched, crawled] = await Promise.all([
+    pool(queries, 5, async (q) => {
+      const results = await tavilySearch({ query: q.query, includeDomains: q.includeDomains, excludeDomains: q.excludeDomains, maxResults: 5, timeRange: q.timeRange });
+      return results.map((r) => ({ ...r, q }));
+    }),
+    // Big ecosystem grant sites list programs on sub-pages that search rarely surfaces.
+    pool(hubs, 2, async (h) => {
+      const q: HuntQuery = { query: `crawl ${h.url}`, source: `${h.name} grants` };
+      return (await tavilyCrawl(h.url, CRAWL_INSTRUCTIONS)).map((r) => ({ ...r, q }));
+    }),
+  ]);
+  searched.push(...crawled);
 
   const byUrl = new Map<string, TavilyResult & { q: HuntQuery }>();
   for (const s of searched) {

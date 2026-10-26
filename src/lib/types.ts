@@ -64,6 +64,8 @@ export type OpportunityRow = {
   extracted: Extracted;
   deadline_at: string | null;
   found_by_query: string | null;
+  checked_at?: string | null;
+  recheck_note?: string | null;
   model: string | null;
   created_at: string;
   score: number | null;

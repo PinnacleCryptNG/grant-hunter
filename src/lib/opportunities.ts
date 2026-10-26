@@ -1,7 +1,7 @@
 import { one, query } from "./db";
 import type { OpportunityRow } from "./types";
 
-const SELECT = `SELECT o.id, o.url, o.title, o.source, o.kind, o.snippet, o.extracted, o.deadline_at, o.found_by_query, o.model, o.created_at,
+const SELECT = `SELECT o.id, o.url, o.title, o.source, o.kind, o.snippet, o.extracted, o.deadline_at, o.found_by_query, o.model, o.created_at, o.checked_at, o.recheck_note,
   uo.score, uo.scoring, uo.status, uo.feedback, uo.model AS scoring_model, uo.analysis
   FROM user_opportunities uo JOIN opportunities o ON o.id = uo.opportunity_id`;
 

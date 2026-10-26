@@ -34,6 +34,18 @@ export function pickModel(tier: ModelTier, available: string[], env: Record<stri
   return fuzzy ?? MODEL_CANDIDATES[tier][0];
 }
 
+/** Embedding models for memory similarity, also served by Token Factory. NEBIUS_EMBED_MODEL overrides. */
+export const EMBED_CANDIDATES = ["Qwen/Qwen3-Embedding-8B", "BAAI/bge-en-icl", "BAAI/bge-multilingual-gemma2", "intfloat/e5-mistral-7b-instruct"];
+
+export function pickEmbedModel(available: string[], env: Record<string, string | undefined> = process.env) {
+  if (env.NEBIUS_EMBED_MODEL) return env.NEBIUS_EMBED_MODEL;
+  const byLower = new Map(available.map((a) => [a.toLowerCase(), a]));
+  const nvidia = available.find((a) => /nvidia/i.test(a) && /embed/i.test(a));
+  if (nvidia) return nvidia;
+  for (const c of EMBED_CANDIDATES) if (byLower.has(c.toLowerCase())) return byLower.get(c.toLowerCase())!;
+  return available.find((a) => /embed/i.test(a)) ?? EMBED_CANDIDATES[0];
+}
+
 let client: OpenAI | null = null;
 function tokenFactory() {
   if (!process.env.NEBIUS_API_KEY) throw new Error("NEBIUS_API_KEY is not set");
@@ -45,7 +57,7 @@ export function llmConfigured() {
   return Boolean(process.env.NEBIUS_API_KEY);
 }
 
-let resolved: Promise<Record<ModelTier, string>> | null = null;
+let resolved: Promise<Record<ModelTier | "embed", string>> | null = null;
 
 /** Match each tier to a Nemotron model that Token Factory actually serves (cached per server instance). */
 export function resolveModels() {
@@ -60,7 +72,7 @@ export function resolveModels() {
       }
       // Retry the lookup on the next call if the model list was unavailable.
       if (available.length === 0) setTimeout(() => (resolved = null), 0);
-      return { nano: pickModel("nano", available), super: pickModel("super", available), ultra: pickModel("ultra", available) };
+      return { nano: pickModel("nano", available), super: pickModel("super", available), ultra: pickModel("ultra", available), embed: pickEmbedModel(available) };
     })();
   }
   return resolved;
@@ -89,6 +101,16 @@ function reasoningSwitch(name: string, thinking: boolean) {
   if (/Nemotron-Nano-9B-v2/i.test(name)) return thinking ? "/think" : "/no_think";
   if (/Llama-3_[13]-Nemotron/i.test(name)) return `detailed thinking ${thinking ? "on" : "off"}`;
   return null;
+}
+
+export async function embed(texts: string[]): Promise<number[][]> {
+  const name = (await resolveModels()).embed;
+  const res = await timed(
+    { kind: "llm", op: "embed", model: name, detail: `${texts.length} texts` },
+    () => tokenFactory().embeddings.create({ model: name, input: texts.map((t) => t.slice(0, 4000)) }),
+    (r) => ({ promptTokens: r.usage?.prompt_tokens }),
+  );
+  return [...res.data].sort((a, b) => a.index - b.index).map((d) => d.embedding);
 }
 
 export function responseFormat(json?: boolean, schema?: JsonSchema) {

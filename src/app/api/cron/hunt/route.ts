@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDigest } from "@/lib/digest";
 import { runHunt } from "@/lib/hunt";
+import { recheckSaved } from "@/lib/recheck";
 import { authorizedCron } from "@/lib/cron";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +14,9 @@ export async function POST(req: Request) {
   if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
   try {
     const { stats } = await runHunt(userId, "schedule", { maxNew: 8 });
+    const rechecked = await recheckSaved(userId).catch(() => []);
     await getDigest(userId, { regenerate: true });
-    return NextResponse.json({ ok: true, scored: stats.scored });
+    return NextResponse.json({ ok: true, scored: stats.scored, rechecked: rechecked.length });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e).slice(0, 200) }, { status: 500 });
   }

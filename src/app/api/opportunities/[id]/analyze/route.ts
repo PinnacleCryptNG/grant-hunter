@@ -20,7 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const limited = await guard(req, uid, "llm");
   if (limited) return limited;
   try {
-    const [profile, memory] = await Promise.all([getProfile(uid), loadMemory(uid)]);
+    const [profile, memory] = await Promise.all([getProfile(uid), withTrace({ userId: uid, subject: `opp:${id}` }, () => loadMemory(uid, Number(id)))]);
     const { data, model } = await withTrace({ userId: uid, subject: `opp:${id}` }, () => analyzeFit(opp.extracted, profile, memory));
     const analysis = { ...data, model, createdAt: new Date().toISOString() };
     await query("UPDATE user_opportunities SET analysis = $3 WHERE user_id = $1 AND opportunity_id = $2", [uid, id, JSON.stringify(analysis)]);

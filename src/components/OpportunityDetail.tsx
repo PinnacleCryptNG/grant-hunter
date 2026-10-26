@@ -19,6 +19,8 @@ const OP_LABEL: Record<string, string> = {
   draft: "Wrote a draft",
   digest: "Ranked for the daily digest",
   search: "Tavily search",
+  crawl: "Tavily crawl",
+  embed: "Compared with your past decisions (embeddings)",
 };
 
 type Draft = { id: number; content: string; model: string | null; approved: boolean; created_at: string };
@@ -285,7 +287,16 @@ export function OpportunityDetail({ id }: { id: number }) {
                 <a href={opp.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 break-all font-medium text-lime underline underline-offset-2">{hostOf(opp.url)}<ExternalLink className="h-3.5 w-3.5 shrink-0" /></a>
                 <span className="block break-all text-xs text-fg/50">{opp.url}</span>
               </li>
-              {opp.found_by_query && <li className="text-xs text-fg/50">Found by Tavily search: “{opp.found_by_query}”</li>}
+              {opp.found_by_query && (
+                <li className="text-xs text-fg/50">
+                  {opp.found_by_query.startsWith("crawl ") ? `Found by Tavily crawl of ${hostOf(opp.found_by_query.slice(6))}` : `Found by Tavily search: “${opp.found_by_query}”`}
+                </li>
+              )}
+              {opp.recheck_note && (
+                <li className="text-xs text-fg/50" suppressHydrationWarning>
+                  {opp.recheck_note} {opp.checked_at && `(${new Date(opp.checked_at).toLocaleDateString()})`}
+                </li>
+              )}
               <li className="text-xs text-fg/50" suppressHydrationWarning>First seen {new Date(opp.created_at).toLocaleString()} · extracted by {opp.model}</li>
             </ul>
           </section>

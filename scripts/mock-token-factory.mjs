@@ -78,6 +78,18 @@ http
         return res.writeHead(200, { "content-type": "application/json" }).end(
           JSON.stringify({ object: "list", data: ["nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B", "nvidia/nemotron-3-super-120b-a12b", "nvidia/Nemotron-3-Ultra-550b-a55b"].map((id) => ({ id, object: "model", owned_by: "nvidia" })) }),
         );
+      if (req.url.endsWith("/embeddings")) {
+        // Bag-of-words vectors so similar texts get similar embeddings.
+        const vec = (t) => {
+          const v = new Array(64).fill(0);
+          for (const w of String(t).toLowerCase().split(/\W+/).filter(Boolean)) v[[...w].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 64, 7)] += 1;
+          return v;
+        };
+        const input = [].concat(JSON.parse(body || "{}").input ?? []);
+        return res.writeHead(200, { "content-type": "application/json" }).end(
+          JSON.stringify({ object: "list", data: input.map((t, index) => ({ object: "embedding", index, embedding: vec(t) })), model: "mock-embed", usage: { prompt_tokens: 10, total_tokens: 10 } }),
+        );
+      }
       if (!req.url.endsWith("/chat/completions")) return res.writeHead(404).end();
       const b = JSON.parse(body);
       const system = b.messages.find((m) => m.role === "system")?.content ?? "";

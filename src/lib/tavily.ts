@@ -63,3 +63,15 @@ export async function tavilyExtract(urls: string[]): Promise<{ url: string; raw_
   );
   return (res.results ?? []).map((r) => ({ url: r.url, raw_content: r.rawContent }));
 }
+
+/** Crawls a grant hub one level deep, keeping pages that look like individual programs or funding rounds. */
+export async function tavilyCrawl(url: string, instructions: string, limit = 8): Promise<TavilyResult[]> {
+  const res = await timed(
+    { kind: "tavily", op: "crawl", detail: url },
+    () => tvly().crawl(url, { maxDepth: 1, limit, instructions, format: "markdown", extractDepth: "basic", timeout: 60 }),
+    (r) => ({ detail: `${url} → ${r.results?.length ?? 0} pages` }),
+  );
+  return (res.results ?? [])
+    .filter((r) => r.rawContent)
+    .map((r) => ({ url: r.url, title: r.rawContent.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? r.url, content: r.rawContent.slice(0, 600), raw_content: r.rawContent, score: 0.5 }));
+}
