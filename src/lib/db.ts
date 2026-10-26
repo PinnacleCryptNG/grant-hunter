@@ -15,12 +15,14 @@ async function createQueryFn(): Promise<QueryFn> {
   }
   const { PGlite } = await import("@electric-sql/pglite");
   const dir = process.env.PGLITE_DIR || (process.env.VERCEL ? "/tmp/grant-hunter-db" : "./.data/pglite");
+  const { mkdirSync } = await import("node:fs");
+  mkdirSync(dir, { recursive: true });
   const db = new PGlite(dir);
   return async (text, params = []) => (await db.query<Row>(text, params)).rows;
 }
 
 async function raw(): Promise<QueryFn> {
-  if (!queryFn) queryFn = createQueryFn();
+  if (!queryFn) queryFn = createQueryFn().catch((e) => { queryFn = null; throw e; });
   return queryFn;
 }
 
