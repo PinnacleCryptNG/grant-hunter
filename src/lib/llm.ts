@@ -103,6 +103,11 @@ function reasoningSwitch(name: string, thinking: boolean) {
   return null;
 }
 
+/** Nemotron 3 reasons by default and the reasoning shares max_tokens with the answer; turn it off unless asked. */
+function templateKwargs(name: string, thinking: boolean) {
+  return /Nemotron-3/i.test(name) ? { chat_template_kwargs: { enable_thinking: thinking } } : {};
+}
+
 export async function embed(texts: string[]): Promise<number[][]> {
   const name = (await resolveModels()).embed;
   const res = await timed(
@@ -135,7 +140,8 @@ export async function chat({ model, system, user, json, schema, op, maxTokens = 
           { role: "user", content: user },
         ],
         ...responseFormat(json, schema),
-      }),
+        ...templateKwargs(name, thinking),
+      } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming),
     (r) => ({ promptTokens: r.usage?.prompt_tokens, completionTokens: r.usage?.completion_tokens }),
   );
   const text = stripThinking(res.choices[0]?.message?.content ?? "");

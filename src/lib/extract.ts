@@ -14,7 +14,8 @@ Rules:
 - deadlineIso: the submission/application deadline as an ISO-8601 timestamp WITH offset (e.g. 2026-11-15T23:59:00-08:00) only if the page states a date. If the page gives a date but no time, use 23:59 in the stated timezone. If no timezone is stated, use UTC and set deadlineTimezone to "unstated". If no deadline, null.
 - rewardUsdEstimate: total or top prize in USD only if the page states an amount in USD or a USD stablecoin (USDC/USDT); otherwise null.
 - paidInSponsorToken: "yes" if rewards are paid in the sponsor's/project's own token, "no" if paid in fiat/USDC/USDT/ETH/SOL etc, else "unknown".
-- isSingleOpportunity: false if the page is a listing/aggregator of many opportunities, a news article without application details, or unrelated.
+- isSingleOpportunity: true if the page is about ONE specific grant program, bounty, hackathon or contest, including its rules, prizes, FAQ or landing page, and even if it has tracks, several prizes or has closed. false only if the page lists many separate opportunities (an index, directory or roundup), is a news/blog post without application details, or is unrelated.
+- reward: prefer the total prize pool or maximum grant as stated on the page (e.g. "20k USDC Total Prizes"); otherwise the top prize.
 - openStatus: "closed" if the page says it ended/closed or the deadline has passed relative to TODAY.
 - unknownFields: list the field names whose value is "unknown".
 Return JSON only.`;

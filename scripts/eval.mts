@@ -34,7 +34,7 @@ for (const p of index) {
   }
   check("ran", true);
   if (l.single !== undefined) check("single-opportunity", x.isSingleOpportunity === l.single);
-  if (l.reward) check("reward", x.reward.value.includes(l.reward));
+  if (l.reward) check("reward", x.reward.value.replace(/,/g, "").includes(l.reward.replace(/,/g, "")));
   if (l.deadline) check("deadline", x.deadline.value.toLowerCase().includes(l.deadline.toLowerCase()));
   if (l.status) check("open/closed", x.openStatus === l.status);
   const page = norm(text);

@@ -71,7 +71,21 @@ The app works without an account: a visitor is remembered by an httpOnly cookie.
 NEBIUS_API_KEY=... npm run eval
 ```
 
-Results with Nemotron on Token Factory: _pending, will be added once the key is configured._
+Results with `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` on Token Factory (strict JSON-schema output, thinking off), from `eval/results.json`:
+
+| Check | Result |
+| --- | --- |
+| Pages extracted without error | 20/20 |
+| Single opportunity vs. index/roundup page | 19/20 (95%) |
+| Reward matches the label | 8/8 |
+| Open/closed matches the label | 4/4 |
+| Deadline matches the label | 2/2 |
+| Values backed by a quote found on the page | 101/114 (89%) |
+| Fields left `unknown` | 46 |
+
+The 13 values whose quote was not found on the page are reset to `unknown` by the verification step, so they never reach the dashboard. The one miss on single opportunity is an index page that was treated as one opportunity. The labelled set is small (20 pages, only some fields labelled per page), so treat these as a sanity check rather than a benchmark.
+
+Nemotron 3 models reason before answering by default, and that reasoning counts against `max_tokens`. Fast calls (extraction, scoring, planning) send `chat_template_kwargs: {"enable_thinking": false}`; without it, long pages ran out of tokens mid-JSON and the eval extracted 0/20.
 
 ## Run it locally
 

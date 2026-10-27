@@ -1,0 +1,155 @@
+{
+ "ranAt": "2026-10-27T06:23:34.994Z",
+ "summary": {
+  "ran": "20/20 (100%)",
+  "single-opportunity": "19/20 (95%)",
+  "reward": "8/8 (100%)",
+  "open/closed": "4/4 (100%)",
+  "deadline": "2/2 (100%)",
+  "fields with a value": 114,
+  "values backed by a quote found on the page": "101/114 (89%)",
+  "fields left unknown": 46
+ },
+ "rows": [
+  {
+   "id": "p01",
+   "single": true,
+   "reward": "125 USDC Total Prizes",
+   "deadline": "unknown",
+   "status": "closed"
+  },
+  {
+   "id": "p02",
+   "single": true,
+   "reward": "5,000 USDC",
+   "deadline": "August 23rd",
+   "status": "closed"
+  },
+  {
+   "id": "p03",
+   "single": true,
+   "reward": "1,000USDC Total Prizes",
+   "deadline": "unknown",
+   "status": "upcoming"
+  },
+  {
+   "id": "p04",
+   "single": true,
+   "reward": "2,100 USDG Total Prizes",
+   "deadline": "April 22, 2026",
+   "status": "closed"
+  },
+  {
+   "id": "p05",
+   "single": true,
+   "reward": "20k USDC Total Prizes",
+   "deadline": "unknown",
+   "status": "upcoming"
+  },
+  {
+   "id": "p06",
+   "single": true,
+   "reward": "unknown",
+   "deadline": "January 27, 2025 (5:00pm Pacific Time)",
+   "status": "closed"
+  },
+  {
+   "id": "p07",
+   "single": true,
+   "reward": "20k USDC Total Prizes",
+   "deadline": "December 3, 2023 (11:45 pm Pacific Time)",
+   "status": "closed"
+  },
+  {
+   "id": "p08",
+   "single": true,
+   "reward": "unknown",
+   "deadline": "October 6, 2025",
+   "status": "closed"
+  },
+  {
+   "id": "p09",
+   "single": true,
+   "reward": "unknown",
+   "deadline": "unknown",
+   "status": "closed"
+  },
+  {
+   "id": "p10",
+   "single": true,
+   "reward": "$23,000+ in cash and other prizes",
+   "deadline": "Feb 20, 2026",
+   "status": "closed"
+  },
+  {
+   "id": "p11",
+   "single": true,
+   "reward": "Up to six grants of $500,000 each",
+   "deadline": "March 15, 2023* (for LOI* If selected, you will be invited to submit a proposal on March 31, which is due April 21*)",
+   "status": "closed"
+  },
+  {
+   "id": "p12",
+   "single": true,
+   "reward": "US $3,000 and $20,000",
+   "deadline": "unknown",
+   "status": "upcoming"
+  },
+  {
+   "id": "p13",
+   "single": true,
+   "reward": "$5,000-$50,000",
+   "deadline": "October 9, 2026",
+   "status": "closed"
+  },
+  {
+   "id": "p14",
+   "single": true,
+   "reward": "up to $450,000 over 3 years",
+   "deadline": "unknown",
+   "status": "upcoming"
+  },
+  {
+   "id": "p15",
+   "single": true,
+   "reward": "up to $5 million",
+   "deadline": "mid-summer",
+   "status": "closed"
+  },
+  {
+   "id": "p16",
+   "single": true,
+   "reward": "4 Season Passes, 1 Anniversary Item, 150 Hearts, 500 Regular Candles, Featured on the Sky website, Featured in Sky, Featured on Sky Social channel",
+   "deadline": "31 March, 2026 at 11:59PM PST",
+   "status": "closed"
+  },
+  {
+   "id": "p17",
+   "single": true,
+   "reward": "Grand Prize and Category winners",
+   "deadline": "July 1, 2026",
+   "status": "closed"
+  },
+  {
+   "id": "p18",
+   "single": true,
+   "reward": "$933K",
+   "deadline": "Aug 21, 2024",
+   "status": "closed"
+  },
+  {
+   "id": "p19",
+   "single": false,
+   "reward": "unknown",
+   "deadline": "unknown",
+   "status": "unknown"
+  },
+  {
+   "id": "p20",
+   "single": false,
+   "reward": "unknown",
+   "deadline": "unknown",
+   "status": "upcoming"
+  }
+ ]
+}
