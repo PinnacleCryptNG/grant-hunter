@@ -8,11 +8,25 @@ Built for the **Nebius x NVIDIA Global AI Hackathon — Personal AI track**.
 - Stack: Next.js 15 + Tailwind (App Router, API routes as the backend), Postgres (Neon on Vercel, embedded PGlite locally), Vercel Cron
 - AI: **NVIDIA Nemotron** models served by **Nebius Token Factory**; web search by **Tavily**
 
+![Hunt results: opportunities ranked by fit, with reward and time left](docs/screenshots/hunt.png)
+
+## Try it in 60 seconds
+
+1. Open **https://grant-hunter-omega.vercel.app** and click **Start hunting**. No account needed.
+2. On **Profile**, tap a few skills, ecosystems and interests (e.g. TypeScript, Solana, AI), pick your country and press **Save profile**.
+3. Go to **Hunt** and press **Hunt now**. The agent searches, reads and verifies pages live; a hunt takes about 20-40 seconds.
+4. Open any opportunity: verified terms with their source quotes, fit reasons and risks. Under **Your next move**, pick a draft (build plan for a hackathon, application for a grant, first draft for a writing contest) and press **Write**.
+5. **Today** shows your top five. Optionally connect Telegram on the profile to get them every morning.
+
+| Opportunity page | Profile | Today's top five | Mobile |
+| --- | --- | --- | --- |
+| ![Opportunity](docs/screenshots/opportunity.png) | ![Profile](docs/screenshots/profile.png) | ![Digest](docs/screenshots/digest.png) | ![Mobile](docs/screenshots/mobile.png) |
+
 ## What it does
 
 1. **Profile & memory.** You fill in skills, links, portfolio, country, timezone, rates, ecosystems and payout preferences. It is stored in Postgres. Every opportunity you save, apply to or reject (with an optional note such as "paid in an illiquid token") is remembered and fed back into future scores and drafts.
-2. **Hunt.** On demand (**Hunt now**) and daily (Vercel Cron), the agent runs Tavily searches across Superteam Earn, Devpost, Gitcoin, X announcements, ecosystem grant pages and creator contests, plus 3 extra queries that Nemotron Nano plans from your profile.
-3. **Verify & score.** Nemotron reads each page and extracts reward, deadline, eligibility, eligible countries, payout method, entry fee and how to apply. Every value must come with a verbatim quote, and the server checks that the quote is really on the page. If it isn't, the field becomes `unknown`. Deadlines are stored in UTC and shown in your timezone. Nemotron then scores fit 0-100 with plus/minus reasons and flags risks: country not eligible, paid in the sponsor's own token, entry fees, unclear terms, deadline passed. Listing pages and closed opportunities are dropped.
+2. **Hunt.** On demand (**Hunt now**) and daily (Vercel Cron), the agent runs Tavily searches across Superteam Earn, Devpost, Gitcoin, X announcements, ecosystem grant pages and creator contests, plus 2 extra queries that Nemotron Nano plans from your profile. When a result is a listing page (a directory, a Superteam or Devpost index, a "top hackathons" roundup), the agent follows up to 8 of its links to the individual opportunities and reads those too.
+3. **Verify & score.** Nemotron reads each page and extracts reward, deadline, eligibility, eligible countries, payout method, entry fee and how to apply. Every value must come with a verbatim quote, and the server checks that the quote is really on the page. If it isn't, the field becomes `unknown`. Deadlines are stored in UTC and shown in your timezone. Nemotron then scores fit 0-100 with plus/minus reasons and flags risks: country not eligible, paid in the sponsor's own token, entry fees, unclear terms, deadline passed. Listing pages are not scored themselves (their links are followed instead), and closed opportunities are dropped.
 4. **Draft.** On any opportunity, Nemotron Ultra writes a tailored application, a pitch or an X thread from your profile and portfolio only. Nothing is submitted: you edit it, approve it, then copy it. Nemotron Ultra can also run a **deep fit analysis** (apply / maybe / skip, effort vs reward, what to verify).
 5. **Dashboard.** A landing page at `/` explains the agent; the app lives at `/dashboard`: opportunities sorted by score or deadline, live countdowns, status (new / saved / applied / rejected), and a detail view with the verified terms, evidence quotes and sources.
 6. **Daily digest.** "Today's top 5": ranked by fit with a boost for deadlines this week, with a one-line why and next step for each, written by Nemotron Super.
@@ -36,7 +50,8 @@ On first use the server reads Token Factory's `GET /v1/models` and picks, per ti
 
 - Calls go through the official [`@tavily/core`](https://www.npmjs.com/package/@tavily/core) SDK (`src/lib/tavily.ts`).
 - `search()` with `search_depth: "advanced"`, `include_raw_content: "markdown"`, `time_range: "month"` and per-source `include_domains` (e.g. `superteam.fun`, `devpost.com`, `gitcoin.co`, `x.com`). The raw page markdown is what Nemotron reads, so one call both finds and fetches the page.
-- `extract()` as a fallback for results whose raw content is missing or too short.
+- `extract()` for results whose raw content is missing or too short, and to read the individual opportunities linked from listing pages (basic depth, about 1 credit per 5 pages).
+- `crawl()` of ecosystem grant hubs (see below).
 
 ### No invented fields
 
@@ -47,7 +62,7 @@ On first use the server reads Token Factory's `GET /v1/models` and picks, per ti
 - **Agent trace:** every Nemotron and Tavily call is logged to `agent_steps` (operation, model, tokens, time, success) by `src/lib/trace.ts`. Each opportunity page shows the calls made for it.
 - **Structured output:** extraction, scoring and search planning send a strict JSON schema (`src/lib/schemas.ts`) as `response_format: json_schema`. If Token Factory or the model rejects it, `chatJson` falls back to JSON mode, then to plain text, and remembers which models don't support it.
 - **Background hunts:** `POST /api/hunt` creates a `hunts` row and runs the hunt after responding; the dashboard polls `GET /api/hunt?id=` for live stage and counts. The daily cron starts a separate `/api/cron/hunt` call per user, each with its own time limit, and retries once.
-- **Tavily credit budget** (`src/lib/budget.ts`): every Tavily response is requested with `include_usage`, and the credits it cost go into a daily ledger in Postgres. A hunt only starts if the month's allowance still has room: an even daily share of `TAVILY_MONTHLY_BUDGET` (default 900) plus `TAVILY_DAILY_BURST` (default 120), never more than the account's own remaining credits from Tavily's `/usage` endpoint minus `TAVILY_ACCOUNT_RESERVE` (default 40). Identical searches are reused for 12 hours and grant-hub crawls for 7 days, at no cost. Domain-filtered listing searches use basic depth (1 credit) and open-web searches use advanced (2). A fresh hunt costs about 13 credits; the daily job sends the digest every day but only hunts every `CRON_HUNT_EVERY_DAYS` (default 3), for up to `CRON_MAX_USERS` (default 10). `/api/status` shows the month's spend.
+- **Tavily credit budget** (`src/lib/budget.ts`): every Tavily response is requested with `include_usage`, and the credits it cost go into a daily ledger in Postgres. A hunt only starts if the month's allowance still has room: an even daily share of `TAVILY_MONTHLY_BUDGET` (default 900) plus `TAVILY_DAILY_BURST` (default 120), never more than the account's own remaining credits from Tavily's `/usage` endpoint minus `TAVILY_ACCOUNT_RESERVE` (default 40). Identical searches are reused for 12 hours and grant-hub crawls for 7 days, at no cost. Domain-filtered listing searches use basic depth (1 credit) and open-web searches use advanced (2). A fresh hunt costs about 13-15 credits; the daily job sends the digest every day but only hunts every `CRON_HUNT_EVERY_DAYS` (default 3), for up to `CRON_MAX_USERS` (default 10). `/api/status` shows the month's spend.
 - **Rate limits:** hunts and Nemotron Ultra/Super requests are capped per visitor, per IP and site-wide per day, with counters in Postgres (`src/lib/ratelimit.ts`). Defaults: 4 hunts/hour per visitor, 8 per IP, 40/day site-wide; 20 AI requests/hour per visitor, 40 per IP, 1000/day. Override with `HUNT_LIMIT_PER_USER_HOUR`, `HUNT_LIMIT_PER_IP_HOUR`, `HUNT_LIMIT_PER_DAY`, `LLM_LIMIT_PER_USER_HOUR`, `LLM_LIMIT_PER_IP_HOUR`, `LLM_LIMIT_PER_DAY`.
 
 ### Memory, re-checks and grant-hub crawling
