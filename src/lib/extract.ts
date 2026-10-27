@@ -16,6 +16,7 @@ Rules:
 - paidInSponsorToken: "yes" if rewards are paid in the sponsor's/project's own token, "no" if paid in fiat/USDC/USDT/ETH/SOL etc, else "unknown".
 - isSingleOpportunity: true if the page is about ONE specific grant program, bounty, hackathon or contest, including its rules, prizes, FAQ or landing page, and even if it has tracks, several prizes or has closed. false only if the page lists many separate opportunities (an index, directory or roundup), is a news/blog post without application details, or is unrelated.
 - reward: prefer the total prize pool or maximum grant as stated on the page (e.g. "20k USDC Total Prizes"); otherwise the top prize.
+- workType: what a participant must produce: "build" (software, code, a product; all hackathons), "writing" (articles, essays, docs), "video", "design", "social" (X threads, posts, memes), "research" (reports), else "other".
 - openStatus: "closed" if the page says it ended/closed or the deadline has passed relative to TODAY.
 - unknownFields: list the field names whose value is "unknown".
 Return JSON only.`;
@@ -25,6 +26,7 @@ const SHAPE = `{
  "title": string,
  "organizer": {"value": string, "evidence": string|null},
  "kind": "grant"|"bounty"|"hackathon"|"contest"|"other",
+ "workType": "build"|"writing"|"video"|"design"|"social"|"research"|"other",
  "summary": string (1-2 sentences, factual),
  "reward": {"value": string, "evidence": string|null},
  "rewardUsdEstimate": number|null,

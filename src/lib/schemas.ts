@@ -20,6 +20,7 @@ export const EXTRACT_SCHEMA: JsonSchema = {
     title: str,
     organizer: field,
     kind: { type: "string", enum: ["grant", "bounty", "hackathon", "contest", "other"] },
+    workType: { type: "string", enum: ["build", "writing", "video", "design", "social", "research", "other"] },
     summary: str,
     reward: field,
     rewardUsdEstimate: { type: ["number", "null"] },

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Check, Github, Loader2, LogOut, Send } from "lucide-react";
+import { Github, Loader2, LogOut, Send } from "lucide-react";
 import { useMe } from "./useMe";
 
 const ghost = "inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium text-fg/70 ring-1 ring-white/15 transition hover:bg-white/5 hover:text-fg disabled:opacity-60";
@@ -87,10 +87,7 @@ export function AccountPanel() {
             body={me.telegram ? `Every morning after the daily hunt, @${me.available.telegram} sends your top five. Send /stop to it anytime.` : linking ? "Tap Start in Telegram to finish. This updates on its own." : "One tap to connect. Every morning the bot sends your five best matches with deadlines and links."}
           >
             {me.telegram ? (
-              <>
-                <span className="inline-flex items-center gap-1.5 text-sm text-lime"><Check className="h-4 w-4" /> Connected</span>
-                <button type="button" className={ghost} onClick={async () => { await fetch("/api/telegram/link", { method: "DELETE" }); void refresh(); }}>Disconnect</button>
-              </>
+              <button type="button" className={ghost} onClick={async () => { await fetch("/api/telegram/link", { method: "DELETE" }); void refresh(); }}>Disconnect</button>
             ) : (
               <button type="button" className={primary} disabled={linking} onClick={connectTelegram}>
                 {linking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {linking ? "Waiting for Telegram…" : "Connect Telegram"}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { one, query } from "@/lib/db";
-import { draftApplication, type DraftKind } from "@/lib/draft";
+import { draftKindsFor, workTypeOf, type DraftKind } from "@/lib/actions";
+import { draftApplication } from "@/lib/draft";
 import { llmConfigured } from "@/lib/llm";
 import { loadMemory } from "@/lib/memory";
 import { getOpportunity } from "@/lib/opportunities";
@@ -20,7 +21,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const limited = await guard(req, uid, "llm");
   if (limited) return limited;
   const body = (await req.json().catch(() => ({}))) as { kind?: DraftKind; notes?: string };
-  const kind: DraftKind = body.kind === "pitch" || body.kind === "tweet" ? body.kind : "application";
+  const allowed = draftKindsFor(opp.kind, workTypeOf(opp.extracted, opp.kind, opp.title));
+  const kind: DraftKind = body.kind && allowed.includes(body.kind) ? body.kind : allowed[0];
   try {
     const [profile, memory] = await Promise.all([getProfile(uid), withTrace({ userId: uid, subject: `opp:${id}` }, () => loadMemory(uid, Number(id)))]);
     const { text, model } = await withTrace({ userId: uid, subject: `opp:${id}` }, () => draftApplication(opp.extracted, opp.url, profile, memory, kind, body.notes?.slice(0, 800)));

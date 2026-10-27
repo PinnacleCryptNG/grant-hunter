@@ -1,14 +1,10 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, Bookmark, BookmarkCheck, Coins, Loader2, Radar, RotateCcw, TriangleAlert, UserRound, X } from "lucide-react";
+import { ArrowRight, Loader2, Radar, TriangleAlert, UserRound } from "lucide-react";
 import { hasProfileSignal } from "@/lib/profile";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatDeadline, hostOf } from "@/lib/format";
-import { markdownToText } from "@/lib/text";
 import type { OpportunityRow, Profile, Status } from "@/lib/types";
-import { Countdown } from "./Countdown";
-import { ScoreBadge } from "./ScoreBadge";
-import { StatusPill } from "./StatusPill";
+import { OpportunityCard } from "./OpportunityCard";
 import { Radar as RadarScope } from "./landing/Radar";
 
 type Filter = "all" | Status;
@@ -205,7 +201,7 @@ export function Dashboard() {
       </div>
 
       {items === null ? (
-        <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-28 animate-pulse rounded-2xl bg-surface ring-1 ring-white/[0.08]" />)}</div>
+        <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl bg-surface ring-1 ring-white/[0.08]" />)}</div>
       ) : visible.length === 0 ? (
         <div className="rounded-2xl bg-surface px-6 py-12 text-center ring-1 ring-white/[0.08]">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-lime-400/10 text-lime">{needsProfile ? <UserRound className="h-6 w-6" /> : <Radar className="h-6 w-6" />}</span>
@@ -224,52 +220,8 @@ export function Dashboard() {
           )}
         </div>
       ) : (
-        <ul className="grid gap-3 lg:grid-cols-2">
-          {visible.map((o) => (
-            <li key={o.id} className="group relative flex flex-col rounded-2xl bg-surface p-4 ring-1 ring-white/[0.08] transition hover:shadow-md hover:ring-white/15">
-              <div className="flex gap-3">
-                <ScoreBadge score={o.score} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg/50">
-                    <span className="font-medium capitalize text-fg/80">{o.kind}</span>
-                    <span aria-hidden>·</span>
-                    <span className="truncate">{o.source || hostOf(o.url)}</span>
-                    <StatusPill status={o.status} />
-                  </div>
-                  <Link href={`/o/${o.id}`} className="mt-1 line-clamp-2 font-semibold leading-snug text-fg after:absolute after:inset-0">
-                    {o.title}
-                  </Link>
-                  <p className="mt-1 line-clamp-2 text-sm text-fg/65">{o.scoring?.verdict || markdownToText(o.extracted.summary)}</p>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ring-1 ring-inset ${o.extracted.reward.value === "unknown" ? "bg-white/[0.04] text-fg/50 ring-white/[0.08]" : "bg-lime-400/10 text-lime ring-lime-400/25"}`}>
-                  <Coins className="h-3 w-3" />
-                  {o.extracted.reward.value === "unknown" ? "Reward unknown" : markdownToText(o.extracted.reward.value).slice(0, 48)}
-                </span>
-                <Countdown iso={o.deadline_at} />
-                {(o.scoring?.risks?.length ?? 0) > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-400/10 px-2 py-0.5 font-medium text-rose-300 ring-1 ring-inset ring-rose-400/25">
-                    <TriangleAlert className="h-3 w-3" />
-                    {o.scoring!.risks.length} risk{o.scoring!.risks.length > 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
-                <span className="truncate text-xs text-fg/50" suppressHydrationWarning>{formatDeadline(o.deadline_at, tz)}</span>
-                <div className="relative z-10 flex gap-1">
-                  <button onClick={() => setItemStatus(o.id, o.status === "saved" ? "new" : "saved")} className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium ring-1 ${o.status === "saved" ? "bg-lime text-night ring-lime" : "text-fg/65 ring-white/[0.08] hover:bg-white/[0.04]"}`}>
-                    {o.status === "saved" ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-                    {o.status === "saved" ? "Saved" : "Save"}
-                  </button>
-                  <button onClick={() => setItemStatus(o.id, o.status === "rejected" ? "new" : "rejected")} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-fg/65 ring-1 ring-white/[0.08] hover:bg-white/[0.04]">
-                    {o.status === "rejected" ? <RotateCcw className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                    {o.status === "rejected" ? "Restore" : "Not for me"}
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
+        <ul className="space-y-4">
+          {visible.map((o) => <OpportunityCard key={o.id} o={o} tz={tz} onStatus={(st) => setItemStatus(o.id, st)} />)}
         </ul>
       )}
     </div>

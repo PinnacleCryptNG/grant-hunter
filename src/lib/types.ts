@@ -18,6 +18,9 @@ export type Profile = {
 
 export type OpportunityKind = "grant" | "bounty" | "hackathon" | "contest" | "other" | "unknown";
 
+/** What a participant has to produce. */
+export type WorkType = "build" | "writing" | "video" | "design" | "social" | "research" | "other";
+
 /** A value pulled from the page. `value` is "unknown" when the page does not state it. */
 export type Field = { value: string; evidence: string | null };
 
@@ -26,6 +29,7 @@ export type Extracted = {
   title: string;
   organizer: Field;
   kind: OpportunityKind;
+  workType?: WorkType;
   summary: string;
   reward: Field;
   rewardUsdEstimate: number | null;

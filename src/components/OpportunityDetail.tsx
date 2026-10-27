@@ -1,13 +1,15 @@
 "use client";
 import Link from "next/link";
-import { Activity, ArrowLeft, BrainCircuit, Check, Copy, Cpu, ExternalLink, Gauge, Globe, Link2, Loader2, PenLine, ShieldCheck } from "lucide-react";
+import { Activity, ArrowLeft, BrainCircuit, Check, Copy, Cpu, ExternalLink, Gauge, Globe, Loader2, PenLine, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { DRAFT_KINDS, draftKindsFor, workTypeOf, type DraftKind } from "@/lib/actions";
 import type { Analysis } from "@/lib/draft";
 import { formatDeadline, hostOf } from "@/lib/format";
 import { markdownToText } from "@/lib/text";
 import type { Extracted, Field, OpportunityRow, Profile, Status } from "@/lib/types";
 import { Countdown } from "./Countdown";
+import { KindTag, OrgMark, WorkTag } from "./kindMeta";
 import { ScoreBadge } from "./ScoreBadge";
 
 type TraceStep = { kind: "llm" | "tavily"; op: string; model: string | null; prompt_tokens: number | null; completion_tokens: number | null; ms: number; ok: boolean; detail: string | null; created_at: string };
@@ -37,7 +39,7 @@ const FIELDS: { key: keyof Extracted; label: string }[] = [
   { key: "howToApply", label: "How to apply" },
 ];
 
-const sev = { high: "bg-rose-400/10 text-rose-300 ring-rose-400/25", medium: "bg-amber-400/10 text-amber-300 ring-amber-400/25", low: "bg-white/[0.04] text-fg/80 ring-white/[0.08]" };
+const sev = { high: "bg-rose-400/[0.07] text-rose-200 ring-rose-400/20", medium: "bg-amber-400/[0.07] text-amber-200 ring-amber-400/20", low: "bg-white/[0.03] text-fg/80 ring-white/[0.08]" };
 
 export function OpportunityDetail({ id }: { id: number }) {
   const [opp, setOpp] = useState<Detail | null>(null);
@@ -47,7 +49,7 @@ export function OpportunityDetail({ id }: { id: number }) {
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [kind, setKind] = useState<"application" | "pitch" | "tweet">("application");
+  const [kind, setKind] = useState<DraftKind | null>(null);
   const [notes, setNotes] = useState("");
   const [feedback, setFeedback] = useState("");
   const [editing, setEditing] = useState<number | null>(null);
@@ -94,8 +96,8 @@ export function OpportunityDetail({ id }: { id: number }) {
     await fetch(`/api/opportunities/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ feedback }) });
   }
 
-  async function draft() {
-    const data = await call("draft", `/api/opportunities/${id}/draft`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, notes }) });
+  async function draft(k: DraftKind) {
+    const data = await call("draft", `/api/opportunities/${id}/draft`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: k, notes }) });
     if (data) setDrafts((d) => [data.draft, ...d]);
   }
 
@@ -129,182 +131,190 @@ export function OpportunityDetail({ id }: { id: number }) {
   const plus = opp.scoring?.reasons.filter((r) => r.type === "plus") ?? [];
   const minus = opp.scoring?.reasons.filter((r) => r.type === "minus") ?? [];
 
+  const work = workTypeOf(x, opp.kind, opp.title);
+  const allowed = draftKindsFor(opp.kind, work);
+  const active: DraftKind = kind && allowed.includes(kind) ? kind : allowed[0]!;
+  const org = x.organizer.value !== "unknown" ? markdownToText(x.organizer.value) : "";
+  const reward = x.reward.value !== "unknown" ? markdownToText(x.reward.value) : null;
+  const risks = opp.scoring?.risks ?? [];
+  const openTone = { open: "text-lime", upcoming: "text-sky-300", closed: "text-fg/45", unknown: "text-fg/45" }[x.openStatus] ?? "text-fg/45";
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-fg/50 hover:text-fg">
         <ArrowLeft className="h-4 w-4" />
         All opportunities
       </Link>
 
-      <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
-        <div className="flex gap-4">
-          <ScoreBadge score={opp.score} size={64} />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-fg/50"><span className="font-medium capitalize text-fg/80">{opp.kind}</span> · {opp.source}</p>
-            <h1 className="mt-1 text-xl font-semibold leading-snug sm:text-2xl">{opp.title}</h1>
-            {x.summary && <p className="mt-2 text-sm text-fg/65">{markdownToText(x.summary)}</p>}
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-start">
+        <OrgMark name={org || opp.source || hostOf(opp.url)} size="lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <KindTag kind={opp.kind} />
+            <WorkTag work={work} />
+            {x.openStatus !== "unknown" && <span className={`inline-flex items-center gap-1.5 text-xs font-medium capitalize ${openTone}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{x.openStatus}</span>}
           </div>
+          <h1 className="mt-3 text-3xl font-semibold leading-[1.1] sm:text-[2.6rem]">{opp.title}</h1>
+          <p className="mt-2 text-sm text-fg/50">
+            {org && <>by <span className="text-fg/80">{org}</span> · </>}
+            <a href={opp.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:text-fg hover:underline">{hostOf(opp.url)}</a>
+          </p>
+          {x.summary && <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-fg/65">{markdownToText(x.summary)}</p>}
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-          <Countdown iso={opp.deadline_at} />
-          <span className="text-xs text-fg/50" suppressHydrationWarning>{formatDeadline(opp.deadline_at, tz)}{opp.deadline_at && x.deadlineTimezone === "unstated" ? " (page gave no timezone; assumed UTC)" : ""}</span>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {(["new", "saved", "applied", "rejected"] as Status[]).map((s) => (
-            <button key={s} onClick={() => setStatus(s)} aria-pressed={opp.status === s} className={`rounded-xl px-3 py-2 text-sm font-medium ring-1 ${opp.status === s ? "bg-lime text-night ring-lime" : "text-fg/80 ring-white/[0.08] hover:bg-white/[0.04]"}`}>
-              {{ new: "New", saved: "Saved", applied: "Applied", rejected: "Not for me" }[s]}
-            </button>
-          ))}
-        </div>
-        <label className="mt-3 block text-xs font-medium text-fg/50">
-          Note for the agent (why you like or reject this; it learns from it)
-          <div className="mt-1 flex gap-2">
-            <input value={feedback} onChange={(e) => setFeedback(e.target.value)} onBlur={saveFeedback} placeholder="e.g. paid in an illiquid token, too much work for the reward" className="w-full rounded-lg border-0 bg-white/[0.04] px-3 py-2 text-sm text-fg ring-1 ring-white/[0.08] focus:ring-2 focus:ring-lime/60" />
-          </div>
-        </label>
-      </section>
+      </header>
 
       {error && <p className="rounded-xl bg-rose-400/10 p-3 text-sm text-rose-300 ring-1 ring-rose-400/25">{error}</p>}
 
-      <div className="grid gap-5 lg:grid-cols-5">
-        <div className="space-y-5 lg:col-span-3">
-          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-semibold"><Gauge className="h-4 w-4 text-lime" />Why this score</h2>
-              <button onClick={rescore} disabled={!!busy} className="text-xs font-medium text-fg/50 underline-offset-2 hover:underline disabled:opacity-50">{busy === "rescore" ? "Rescoring…" : "Rescore with latest profile"}</button>
-            </div>
-            {opp.scoring?.verdict && <p className="mt-2 text-sm text-fg/80">{opp.scoring.verdict}</p>}
-            <ul className="mt-3 space-y-1.5 text-sm">
-              {plus.map((r, i) => <li key={`p${i}`} className="flex gap-2"><span className="mt-0.5 text-lime">+</span><span>{r.text}</span></li>)}
-              {minus.map((r, i) => <li key={`m${i}`} className="flex gap-2"><span className="mt-0.5 text-rose-400">−</span><span>{r.text}</span></li>)}
-            </ul>
-            {(opp.scoring?.risks.length ?? 0) > 0 && (
-              <>
-                <h3 className="mt-4 text-sm font-semibold">Risks</h3>
-                <ul className="mt-2 space-y-2">
-                  {opp.scoring!.risks.map((r, i) => (
-                    <li key={i} className={`rounded-lg px-3 py-2 text-sm ring-1 ring-inset ${sev[r.severity] ?? sev.low}`}>
-                      <span className="font-medium">{r.label}</span>
-                      {r.detail && <span className="block text-xs opacity-80">{r.detail}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            <p className="mt-3 text-[11px] text-fg/40">Scored by {opp.scoring_model ?? "Nemotron"} via Nebius Token Factory</p>
-          </section>
-
-          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-semibold"><BrainCircuit className="h-4 w-4 text-lime" />Deep fit analysis</h2>
-              <button onClick={analyze} disabled={!!busy} className="rounded-lg bg-lime px-3 py-1.5 text-xs font-semibold text-night disabled:opacity-50">
-                {busy === "analyze" ? "Nemotron Ultra is thinking…" : opp.analysis ? "Re-run" : "Run with Nemotron Ultra"}
-              </button>
-            </div>
-            {opp.analysis ? (
-              <div className="mt-3 space-y-3 text-sm">
-                <p><span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${opp.analysis.recommendation === "apply" ? "bg-lime-400/15 text-lime" : opp.analysis.recommendation === "skip" ? "bg-rose-400/15 text-rose-300" : "bg-amber-400/15 text-amber-300"}`}>{opp.analysis.recommendation}</span>{opp.analysis.summary}</p>
-                {opp.analysis.expectedValueNote && <p className="text-fg/65">{opp.analysis.expectedValueNote}{opp.analysis.effortEstimateHours ? ` (≈${opp.analysis.effortEstimateHours}h effort)` : ""}</p>}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <List title="Strengths" items={opp.analysis.strengths} />
-                  <List title="Gaps" items={opp.analysis.gaps} />
-                </div>
-                <List title="Verify before applying" items={opp.analysis.questionsToVerify} />
-                <p className="text-[11px] text-fg/40">{opp.analysis.model}</p>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:order-2 lg:self-start">
+          <div className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
+            <div className="flex items-center gap-4">
+              <ScoreBadge score={opp.score} size={64} />
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg/35">Fit score</p>
+                <p className="mt-0.5 text-sm text-fg/70">{opp.score === null ? "Not scored yet" : opp.score >= 75 ? "Strong match" : opp.score >= 50 ? "Worth a look" : "Weak match"}</p>
               </div>
-            ) : (
-              <p className="mt-2 text-sm text-fg/50">Nemotron Ultra reasons over your profile, memory and the verified terms to recommend apply / maybe / skip and what to double-check.</p>
-            )}
-          </section>
-
-          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
-            <h2 className="flex items-center gap-2 font-semibold"><PenLine className="h-4 w-4 text-lime" />Draft with Nemotron Ultra</h2>
-            <p className="mt-1 text-sm text-fg/50">Written from your profile and portfolio only. Nothing is sent: edit it, approve it, then copy it and submit it yourself.</p>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {(["application", "pitch", "tweet"] as const).map((k) => (
-                <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k} className={`rounded-lg px-2 py-1.5 text-sm font-medium capitalize ring-1 ${kind === k ? "bg-lime text-night ring-lime" : "text-fg/80 ring-white/[0.08]"}`}>
-                  {k === "tweet" ? "X thread" : k}
+            </div>
+            <dl className="mt-5 space-y-4 border-t border-white/[0.06] pt-5">
+              <div>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg/35">Reward</dt>
+                <dd className={`mt-1 font-display text-xl font-semibold leading-snug ${reward ? "text-lime" : "text-fg/40"}`}>{reward ?? "Not stated on the page"}</dd>
+              </div>
+              <div>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg/35">Deadline</dt>
+                <dd className="mt-1.5"><Countdown iso={opp.deadline_at} /></dd>
+                <dd className="mt-1.5 text-xs text-fg/50" suppressHydrationWarning>{formatDeadline(opp.deadline_at, tz)}{opp.deadline_at && x.deadlineTimezone === "unstated" ? " (no timezone on the page; assumed UTC)" : ""}</dd>
+              </div>
+            </dl>
+            <a href={opp.url} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime px-4 py-2.5 text-sm font-semibold text-night transition hover:bg-lime-soft">
+              Open on {hostOf(opp.url)} <ExternalLink className="h-4 w-4" />
+            </a>
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
+              {(["saved", "applied", "rejected"] as Status[]).map((s) => (
+                <button key={s} onClick={() => setStatus(opp.status === s ? "new" : s)} aria-pressed={opp.status === s} className={`rounded-full px-2 py-1.5 text-xs font-medium ring-1 transition ${opp.status === s ? "bg-white text-night ring-white" : "text-fg/70 ring-white/10 hover:bg-white/[0.05]"}`}>
+                  {{ new: "New", saved: "Save", applied: "Applied", rejected: "Not for me" }[s]}
                 </button>
               ))}
             </div>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional: what you want to build or emphasise" className="mt-2 w-full rounded-lg border-0 bg-white/[0.04] px-3 py-2 text-sm ring-1 ring-white/[0.08] focus:ring-2 focus:ring-lime/60" />
-            <button onClick={draft} disabled={!!busy} className="mt-2 w-full rounded-xl bg-lime px-4 py-2.5 text-sm font-semibold text-night disabled:opacity-50">
-              {busy === "draft" ? <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" /> : <PenLine className="mr-1.5 inline h-4 w-4" />}{busy === "draft" ? "Nemotron Ultra is writing…" : "Write a draft"}
-            </button>
-            <div className="mt-4 space-y-4">
+            <label className="mt-4 block text-xs text-fg/45">
+              Note for the agent
+              <input value={feedback} onChange={(e) => setFeedback(e.target.value)} onBlur={saveFeedback} placeholder="Why you like or skip this" className="mt-1.5 w-full rounded-lg border-0 bg-white/[0.04] px-3 py-2 text-sm text-fg ring-1 ring-white/[0.08] focus:ring-2 focus:ring-lime/60" />
+            </label>
+          </div>
+          <div className="px-1 text-xs leading-relaxed text-fg/45">
+            {opp.found_by_query && <p>{opp.found_by_query.startsWith("crawl ") ? `Found by Tavily crawl of ${hostOf(opp.found_by_query.slice(6))}` : `Found by Tavily search “${opp.found_by_query}”`}</p>}
+            {opp.recheck_note && <p className="mt-1" suppressHydrationWarning>{opp.recheck_note} {opp.checked_at && `(${new Date(opp.checked_at).toLocaleDateString()})`}</p>}
+            <p className="mt-1" suppressHydrationWarning>First seen {new Date(opp.created_at).toLocaleDateString()} · extracted by {opp.model?.split("/").pop()}</p>
+          </div>
+        </aside>
+
+        <div className="min-w-0 space-y-12 lg:order-1">
+          <Block icon={<Gauge className="h-4 w-4" />} title="Why it fits" action={<button onClick={rescore} disabled={!!busy} className="text-xs font-medium text-fg/50 underline-offset-2 hover:text-fg hover:underline disabled:opacity-50">{busy === "rescore" ? "Rescoring…" : "Rescore"}</button>}>
+            {opp.scoring?.verdict && <p className="text-[15px] leading-relaxed text-fg/85">{opp.scoring.verdict}</p>}
+            {(plus.length > 0 || minus.length > 0) && (
+              <div className="mt-5 grid gap-6 sm:grid-cols-2">
+                <ReasonList title="In your favour" items={plus.map((r) => r.text)} mark="+" tone="text-lime" />
+                <ReasonList title="Against" items={minus.map((r) => r.text)} mark="−" tone="text-rose-400" />
+              </div>
+            )}
+            {risks.length > 0 && (
+              <ul className="mt-6 space-y-2">
+                {risks.map((r, i) => (
+                  <li key={i} className={`flex gap-3 rounded-xl px-4 py-3 text-sm ring-1 ring-inset ${sev[r.severity] ?? sev.low}`}>
+                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span><span className="font-medium">{r.label}</span>{r.detail && <span className="block text-xs opacity-80">{r.detail}</span>}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-4 text-[11px] text-fg/35">Scored by {opp.scoring_model?.split("/").pop() ?? "Nemotron"} via Nebius Token Factory</p>
+          </Block>
+
+          <Block icon={<PenLine className="h-4 w-4" />} title="Your next move" sub={`Drafts for a ${({ build: "build", writing: "writing", video: "video", design: "design", social: "social", research: "research", other: "general" } as const)[work]} ${opp.kind === "unknown" || opp.kind === "other" ? "opportunity" : opp.kind}, written by Nemotron Ultra from your profile and portfolio. Nothing is sent: edit, approve, then copy it yourself.`}>
+            <div className="flex flex-wrap gap-2" role="tablist">
+              {allowed.map((k) => (
+                <button key={k} role="tab" onClick={() => setKind(k)} aria-selected={active === k} className={`rounded-full px-4 py-2 text-sm font-medium ring-1 transition ${active === k ? "bg-lime text-night ring-lime" : "text-fg/70 ring-white/10 hover:bg-white/[0.05]"}`}>
+                  {DRAFT_KINDS[k].label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 text-sm text-fg/50">{DRAFT_KINDS[active].hint}</p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional: what you want to build or emphasise" className="w-full rounded-full border-0 bg-white/[0.04] px-4 py-2.5 text-sm ring-1 ring-white/[0.08] focus:ring-2 focus:ring-lime/60" />
+              <button onClick={() => draft(active)} disabled={!!busy} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-lime px-5 py-2.5 text-sm font-semibold text-night transition hover:bg-lime-soft disabled:opacity-50">
+                {busy === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
+                {busy === "draft" ? "Writing…" : `Write ${DRAFT_KINDS[active].label.toLowerCase()}`}
+              </button>
+            </div>
+            <div className="mt-6 space-y-4">
               {drafts.map((d) => (
-                <article key={d.id} className={`rounded-xl p-4 ring-1 ${d.approved ? "ring-lime-400/40" : "ring-white/[0.08]"}`}>
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-fg/50">
-                    <span suppressHydrationWarning>{new Date(d.created_at).toLocaleString()} · {d.model}</span>
-                    <div className="flex gap-1">
-                      <button onClick={() => setEditing(editing === d.id ? null : d.id)} className="rounded-md px-2 py-1 ring-1 ring-white/[0.08]">{editing === d.id ? "Done" : "Edit"}</button>
-                      <button onClick={() => updateDraft(d, { approved: !d.approved })} className={`rounded-md px-2 py-1 ring-1 ${d.approved ? "bg-lime text-night ring-lime" : "ring-white/[0.08]"}`}>{d.approved ? "Approved" : "Approve"}</button>
-                      <button onClick={() => copy(d)} disabled={!d.approved} title={d.approved ? "Copy" : "Approve first"} className="inline-flex items-center gap-1 rounded-md bg-lime px-2 py-1 text-night disabled:opacity-40">{copied === d.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied === d.id ? "Copied" : "Copy"}</button>
+                <article key={d.id} className={`rounded-2xl bg-surface p-5 ring-1 ${d.approved ? "ring-lime/40" : "ring-white/[0.08]"}`}>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-fg/45">
+                    <span suppressHydrationWarning>{new Date(d.created_at).toLocaleString()} · {d.model?.split("/").pop()}</span>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => setEditing(editing === d.id ? null : d.id)} className="rounded-full px-3 py-1 ring-1 ring-white/10 hover:bg-white/[0.05]">{editing === d.id ? "Done" : "Edit"}</button>
+                      <button onClick={() => updateDraft(d, { approved: !d.approved })} className={`rounded-full px-3 py-1 ring-1 ${d.approved ? "bg-lime text-night ring-lime" : "ring-white/10 hover:bg-white/[0.05]"}`}>{d.approved ? "Approved" : "Approve"}</button>
+                      <button onClick={() => copy(d)} disabled={!d.approved} title={d.approved ? "Copy" : "Approve first"} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 font-medium text-night disabled:opacity-30">{copied === d.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied === d.id ? "Copied" : "Copy"}</button>
                     </div>
                   </div>
                   {editing === d.id ? (
                     <textarea defaultValue={d.content} rows={16} onBlur={(e) => updateDraft(d, { content: e.target.value })} className="w-full rounded-lg border-0 bg-white/[0.04] p-3 font-mono text-xs ring-1 ring-white/[0.08]" />
                   ) : (
-                    <div className="prose-draft text-sm text-fg"><ReactMarkdown>{d.content}</ReactMarkdown></div>
+                    <div className="prose-draft text-sm leading-relaxed text-fg"><ReactMarkdown>{d.content}</ReactMarkdown></div>
                   )}
                 </article>
               ))}
             </div>
-          </section>
-        </div>
+          </Block>
 
-        <aside className="space-y-5 lg:col-span-2">
-          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
-            <h2 className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4 text-lime" />Verified terms</h2>
-            <p className="mt-1 text-xs text-fg/50">Every value comes with a quote found on the source page. Anything the page doesn&apos;t state is marked unknown.</p>
-            <dl className="mt-3 divide-y divide-white/[0.06]">
+          <Block icon={<BrainCircuit className="h-4 w-4" />} title="Deep fit analysis" action={<button onClick={analyze} disabled={!!busy} className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-fg ring-1 ring-white/15 transition hover:bg-white/[0.05] disabled:opacity-50">{busy === "analyze" ? "Thinking…" : opp.analysis ? "Re-run" : "Run with Nemotron Ultra"}</button>}>
+            {opp.analysis ? (
+              <div className="space-y-5 text-sm">
+                <p className="text-[15px] leading-relaxed text-fg/85"><span className={`mr-2 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${opp.analysis.recommendation === "apply" ? "bg-lime/15 text-lime" : opp.analysis.recommendation === "skip" ? "bg-rose-400/15 text-rose-300" : "bg-amber-400/15 text-amber-300"}`}>{opp.analysis.recommendation}</span>{opp.analysis.summary}</p>
+                {opp.analysis.expectedValueNote && <p className="text-fg/60">{opp.analysis.expectedValueNote}{opp.analysis.effortEstimateHours ? ` (≈${opp.analysis.effortEstimateHours}h effort)` : ""}</p>}
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <ReasonList title="Strengths" items={opp.analysis.strengths} mark="+" tone="text-lime" />
+                  <ReasonList title="Gaps" items={opp.analysis.gaps} mark="−" tone="text-rose-400" />
+                </div>
+                <ReasonList title="Verify before applying" items={opp.analysis.questionsToVerify} mark="?" tone="text-amber-300" />
+              </div>
+            ) : (
+              <p className="text-sm text-fg/50">Nemotron Ultra reasons over your profile, memory and the verified terms, then recommends apply, maybe or skip and lists what to double-check.</p>
+            )}
+          </Block>
+
+          <Block icon={<ShieldCheck className="h-4 w-4" />} title="Verified terms" sub="Every value comes with a quote found on the source page. Anything the page doesn't state is marked unknown.">
+            <dl className="grid gap-px overflow-hidden rounded-2xl bg-white/[0.06] ring-1 ring-white/[0.06] sm:grid-cols-2">
               {FIELDS.map(({ key, label }) => {
                 const f = x[key] as Field;
                 return (
-                  <div key={key} className="py-2.5">
-                    <dt className="text-xs font-medium text-fg/50">{label}</dt>
-                    <dd className={`mt-0.5 text-sm ${f.value === "unknown" ? "italic text-fg/40" : "text-fg"}`}>{markdownToText(f.value)}</dd>
-                    {f.evidence && <dd className="mt-1 border-l-2 border-white/[0.06] pl-2 text-xs text-fg/50">“{f.evidence}”</dd>}
+                  <div key={key} className="bg-night p-4">
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg/35">{label}</dt>
+                    <dd className={`mt-1.5 text-sm ${f.value === "unknown" ? "italic text-fg/35" : "text-fg"}`}>{markdownToText(f.value)}</dd>
+                    {f.evidence && <dd className="mt-2 border-l-2 border-lime/30 pl-2.5 text-xs leading-relaxed text-fg/45">“{f.evidence}”</dd>}
                   </div>
                 );
               })}
-              <div className="py-2.5">
-                <dt className="text-xs font-medium text-fg/50">Paid in sponsor token</dt>
-                <dd className="mt-0.5 text-sm capitalize">{x.paidInSponsorToken}</dd>
+              <div className="bg-night p-4">
+                <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg/35">Paid in sponsor token</dt>
+                <dd className="mt-1.5 text-sm capitalize">{x.paidInSponsorToken}</dd>
               </div>
               {x.requiredSkills.length > 0 && (
-                <div className="py-2.5">
-                  <dt className="text-xs font-medium text-fg/50">Skills mentioned</dt>
-                  <dd className="mt-1 flex flex-wrap gap-1">{x.requiredSkills.map((s) => <span key={s} className="rounded-md bg-white/[0.07] px-1.5 py-0.5 text-xs">{s}</span>)}</dd>
+                <div className="bg-night p-4">
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg/35">Skills mentioned</dt>
+                  <dd className="mt-2 flex flex-wrap gap-1.5">{x.requiredSkills.map((s) => <span key={s} className="rounded-full px-2.5 py-0.5 text-xs text-fg/75 ring-1 ring-white/10">{s}</span>)}</dd>
                 </div>
               )}
             </dl>
-          </section>
-          <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
-            <h2 className="flex items-center gap-2 font-semibold"><Link2 className="h-4 w-4 text-lime" />Sources</h2>
-            <ul className="mt-2 space-y-2 text-sm">
-              <li>
-                <a href={opp.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 break-all font-medium text-lime underline underline-offset-2">{hostOf(opp.url)}<ExternalLink className="h-3.5 w-3.5 shrink-0" /></a>
-                <span className="block break-all text-xs text-fg/50">{opp.url}</span>
-              </li>
-              {opp.found_by_query && (
-                <li className="text-xs text-fg/50">
-                  {opp.found_by_query.startsWith("crawl ") ? `Found by Tavily crawl of ${hostOf(opp.found_by_query.slice(6))}` : `Found by Tavily search: “${opp.found_by_query}”`}
-                </li>
-              )}
-              {opp.recheck_note && (
-                <li className="text-xs text-fg/50" suppressHydrationWarning>
-                  {opp.recheck_note} {opp.checked_at && `(${new Date(opp.checked_at).toLocaleDateString()})`}
-                </li>
-              )}
-              <li className="text-xs text-fg/50" suppressHydrationWarning>First seen {new Date(opp.created_at).toLocaleString()} · extracted by {opp.model}</li>
-            </ul>
-          </section>
+          </Block>
+
           {trace.length > 0 && (
-            <section className="rounded-2xl bg-surface p-5 ring-1 ring-white/[0.08]">
-              <h2 className="flex items-center gap-2 font-semibold"><Activity className="h-4 w-4 text-lime" />Agent trace</h2>
-              <p className="mt-1 text-xs text-fg/50">Every Nemotron and Tavily call made for this opportunity.</p>
-              <ol className="mt-3 space-y-3 border-l border-white/10 pl-4">
+            <details className="group border-t border-white/[0.07] pt-6">
+              <summary className="flex cursor-pointer list-none items-center gap-2 font-display text-lg font-semibold">
+                <Activity className="h-4 w-4 text-lime" />Agent trace
+                <span className="font-sans text-xs font-normal text-fg/40">{trace.length} calls · click to {"expand"}</span>
+              </summary>
+              <ol className="mt-5 space-y-3 border-l border-white/10 pl-4">
                 {trace.map((t, i) => (
                   <li key={i} className="relative text-sm">
                     <span className={`absolute -left-[21px] top-1.5 h-2 w-2 rounded-full ${t.ok ? "bg-lime" : "bg-rose-400"}`} />
@@ -323,20 +333,35 @@ export function OpportunityDetail({ id }: { id: number }) {
                   </li>
                 ))}
               </ol>
-            </section>
+            </details>
           )}
-        </aside>
+        </div>
       </div>
     </div>
   );
 }
 
-function List({ title, items }: { title: string; items: string[] }) {
+function Block({ icon, title, sub, action, children }: { icon: React.ReactNode; title: string; sub?: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="border-t border-white/[0.07] pt-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-display text-lg font-semibold"><span className="text-lime">{icon}</span>{title}</h2>
+        {action}
+      </div>
+      {sub && <p className="mt-1.5 max-w-2xl text-sm text-fg/50">{sub}</p>}
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function ReasonList({ title, items, mark, tone }: { title: string; items: string[]; mark: string; tone: string }) {
   if (!items?.length) return null;
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-fg/50">{title}</h3>
-      <ul className="mt-1 list-disc space-y-1 pl-4">{items.map((i, n) => <li key={n}>{i}</li>)}</ul>
+      <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg/40">{title}</h3>
+      <ul className="mt-2.5 space-y-2 text-sm leading-relaxed text-fg/80">
+        {items.map((t, n) => <li key={n} className="flex gap-2.5"><span className={`mt-px font-semibold ${tone}`}>{mark}</span><span>{t}</span></li>)}
+      </ul>
     </div>
   );
 }
