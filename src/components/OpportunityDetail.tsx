@@ -316,7 +316,7 @@ export function OpportunityDetail({ id }: { id: number }) {
               <ChevronDown className="ml-auto h-3.5 w-3.5 transition group-open:rotate-180" />
             </summary>
             <div className="mt-4 space-y-1 text-xs leading-relaxed text-fg/45">
-              {opp.found_by_query && <p>{opp.found_by_query.startsWith("crawl ") ? `Tavily crawl of ${hostOf(opp.found_by_query.slice(6))}` : `Tavily search “${opp.found_by_query}”`}</p>}
+              {opp.found_by_query && <p>{opp.found_by_query.startsWith("crawl ") ? `Tavily crawl of ${hostOf(opp.found_by_query.slice(6))}` : opp.found_by_query.startsWith("via ") ? `Followed from a listing on ${hostOf(opp.found_by_query.slice(4))}` : `Tavily search “${opp.found_by_query}”`}</p>}
               {opp.recheck_note && <p suppressHydrationWarning>{opp.recheck_note} {opp.checked_at && `(${new Date(opp.checked_at).toLocaleDateString()})`}</p>}
               <p suppressHydrationWarning>First seen {new Date(opp.created_at).toLocaleDateString()}</p>
             </div>

@@ -19,6 +19,7 @@ export type HuntStats = {
   skippedListing: number;
   skippedClosed: number;
   scored: number;
+  followed?: number;
   errors: string[];
   ms: number;
 };
@@ -46,6 +47,8 @@ const GRANT_HUBS: { name: string; match: RegExp; url: string }[] = [
   { name: "Arbitrum", match: /arbitrum/i, url: "https://arbitrum.foundation/grants" },
   { name: "Sui", match: /\bsui\b/i, url: "https://sui.io/grants-hub" },
 ];
+/** Individual opportunities read from links on listing pages, per hunt. */
+const FOLLOW_MAX = 8;
 const CRAWL_INSTRUCTIONS = "Pages describing a single grant program, RFP or open funding round, with amounts, eligibility and how to apply";
 
 export function grantHubsFor(p: Profile, max = 2) {
@@ -69,6 +72,8 @@ export function isCandidateUrl(u: string) {
     const host = url.hostname.replace(/^www\./, "");
     const path = url.pathname;
     if (NOISY_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return false;
+    // Governance forums are proposals and discussion threads, not opportunities.
+    if (/^(gov|forum|discuss|governance|research)\./.test(host) || /^\/t\//.test(path)) return false;
     // Devpost hackathons live on their own subdomain; devpost.com itself is listings and profiles.
     if (host === "devpost.com") return false;
     if (host.endsWith(".devpost.com")) return !/^\/(project-gallery|forum_topics|submissions|participants|updates)\b/.test(path);
@@ -79,6 +84,41 @@ export function isCandidateUrl(u: string) {
   } catch {
     return false;
   }
+}
+
+const NAV_PATH = /\/(about|login|log-in|signin|sign-in|signup|sign-up|register|terms|privacy|faq|contact|careers|jobs|blog|news|press|docs|help|support|cookies?|legal|team|brand|search|tags?|categor(y|ies)|authors?|users?|profiles?|settings|leaderboard|feed|sponsors?)(\/|$)/i;
+const LISTING_HINT = /grant|bount|hackathon|contest|challenge|prize|listing|round|rfp|fellowship|program|competition|quest|award|accelerator/i;
+const rootDomain = (host: string) => host.replace(/^www\./, "").split(".").slice(-2).join(".");
+
+/** Links on a listing page that look like individual opportunities, best first. */
+export function listingLinks(pageUrl: string, markdown: string, max = 3): string[] {
+  let base: URL;
+  try {
+    base = new URL(pageUrl);
+  } catch {
+    return [];
+  }
+  const self = normalizeUrl(pageUrl);
+  const seen = new Set<string>();
+  const out: { url: string; score: number }[] = [];
+  for (const m of markdown.matchAll(/\[([^\]]{0,200})\]\((https?:\/\/[^\s)]+|\/[^\s)]*)\)/g)) {
+    let u: URL;
+    try {
+      u = new URL(m[2]!, base);
+    } catch {
+      continue;
+    }
+    const url = normalizeUrl(u.toString());
+    if (url === self || seen.has(url)) continue;
+    seen.add(url);
+    if (!/^https?:$/.test(u.protocol) || (u.pathname.length < 2 && !u.hostname.endsWith(".devpost.com")) || NAV_PATH.test(u.pathname) || /\.(png|jpe?g|gif|svg|webp|pdf|zip|mp4)$/i.test(u.pathname)) continue;
+    if (!isCandidateUrl(url)) continue;
+    const sameSite = rootDomain(u.hostname) === rootDomain(base.hostname);
+    const hint = LISTING_HINT.test(m[1]!) || LISTING_HINT.test(u.pathname) || u.hostname.endsWith(".devpost.com");
+    const score = (hint ? 2 : 0) + (sameSite ? 1 : 0) + (u.pathname.split("/").filter(Boolean).length >= 2 ? 1 : 0);
+    if (score >= 3) out.push({ url, score });
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, max).map((o) => o.url);
 }
 
 /** Take the best results from each query in turn so one noisy source cannot crowd out the rest. */
@@ -173,7 +213,7 @@ export async function startHunt(userId: string, trigger: "manual" | "schedule") 
 export async function runHunt(userId: string, trigger: "manual" | "schedule", opts: { maxNew?: number; huntId?: number } = {}) {
   const huntId = opts.huntId ?? (await startHunt(userId, trigger));
   try {
-    return await withTrace({ userId, huntId }, () => hunt(userId, huntId, opts.maxNew ?? 10));
+    return await withTrace({ userId, huntId }, () => hunt(userId, huntId, opts.maxNew ?? 12));
   } catch (e) {
     await query("UPDATE hunts SET status = 'failed', error = $2, finished_at = now() WHERE id = $1", [huntId, String(e).slice(0, 500)]);
     throw e;
@@ -183,7 +223,7 @@ export async function runHunt(userId: string, trigger: "manual" | "schedule", op
 async function hunt(userId: string, huntId: number, maxNew: number) {
   const started = Date.now();
   const profile = await getProfile(userId);
-  const stats: HuntStats = { queries: 0, results: 0, newPages: 0, extracted: 0, skippedListing: 0, skippedClosed: 0, scored: 0, errors: [], ms: 0 };
+  const stats: HuntStats = { queries: 0, results: 0, newPages: 0, extracted: 0, skippedListing: 0, skippedClosed: 0, scored: 0, followed: 0, errors: [], ms: 0 };
   let toScoreTotal = 0;
   const progress = (stage: HuntStage) =>
     query("UPDATE hunts SET progress = $2 WHERE id = $1", [huntId, JSON.stringify({ stage, ...stats, toScore: toScoreTotal, errors: stats.errors.length })]).catch(() => {});
@@ -252,7 +292,8 @@ async function hunt(userId: string, huntId: number, maxNew: number) {
     .map((k) => ({ id: k.id, extracted: k.extracted }));
 
   await progress("verifying");
-  const extractedResults = await pool(fresh, 4, async (r) => {
+  const listings = new Set(known.filter((k) => !k.extracted.isSingleOpportunity).map((k) => k.url));
+  const ingest = async (r: TavilyResult & { q: HuntQuery }) => {
     const { extracted, model } = await withTrace({ subject: r.url }, () => extractOpportunity({ url: r.url, title: r.title, text: r.raw_content || r.content }));
     stats.extracted++;
     await progress("verifying");
@@ -262,11 +303,46 @@ async function hunt(userId: string, huntId: number, maxNew: number) {
        ON CONFLICT (url) DO UPDATE SET extracted = EXCLUDED.extracted, updated_at = now() RETURNING id`,
       [r.url, extracted.title.slice(0, 300), sourceFor(r.url, r.q.source), extracted.kind, r.content?.slice(0, 600) ?? null, JSON.stringify(extracted), extracted.deadlineIso, r.q.query, model],
     );
-    if (!extracted.isSingleOpportunity) stats.skippedListing++;
-    else if (extracted.openStatus === "closed") stats.skippedClosed++;
+    if (!extracted.isSingleOpportunity) {
+      stats.skippedListing++;
+      listings.add(r.url);
+    } else if (extracted.openStatus === "closed") stats.skippedClosed++;
     else if (row) toScore.push({ id: row.id, extracted });
-  });
+  };
+  const extractedResults = await pool(fresh, 4, ingest);
   for (const e of extractedResults) if (e.status === "rejected") stats.errors.push(String(e.reason).slice(0, 200));
+
+  // Listing pages (Superteam, Devpost, grant directories) link to the individual opportunities; read a few of those.
+  const candidates: { url: string; from: string }[] = [];
+  for (const from of listings) {
+    const text = byUrl.get(from)?.raw_content;
+    if (text) for (const url of listingLinks(from, text)) if (!byUrl.has(url) && !candidates.some((c) => c.url === url)) candidates.push({ url, from });
+  }
+  if (candidates.length) {
+    const seenRows = await query<{ url: string }>("SELECT url FROM opportunities WHERE url = ANY($1)", [candidates.map((c) => c.url)]);
+    const seenUrls = new Set(seenRows.map((r) => r.url));
+    const follow = roundRobin(
+      candidates.filter((c) => !seenUrls.has(c.url)).map((c, i) => ({ ...c, score: -i, q: { query: `via ${c.from}`, source: sourceFor(c.from, rootDomain(new URL(c.from).hostname)) } as HuntQuery })),
+      FOLLOW_MAX,
+    );
+    if (follow.length) {
+      stats.newPages += follow.length;
+      try {
+        const pages = await tavilyExtract(follow.map((f) => f.url));
+        const byFollowUrl = new Map(follow.map((f) => [f.url, f]));
+        const read = pages
+          .map((p) => ({ p, f: byFollowUrl.get(normalizeUrl(p.url)) }))
+          .filter((x): x is { p: (typeof pages)[number]; f: (typeof follow)[number] } => Boolean(x.f && x.p.raw_content && x.p.raw_content.length > 200));
+        stats.followed = read.length;
+        const followed = await pool(read, 4, ({ p, f }) =>
+          ingest({ url: f.url, title: p.raw_content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? f.url, content: p.raw_content.slice(0, 600), raw_content: p.raw_content, score: 0, q: f.q }),
+        );
+        for (const e of followed) if (e.status === "rejected") stats.errors.push(String(e.reason).slice(0, 200));
+      } catch (e) {
+        stats.errors.push(String(e).slice(0, 200));
+      }
+    }
+  }
 
   toScoreTotal = toScore.length;
   await progress("scoring");
