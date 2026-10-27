@@ -110,5 +110,14 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_code TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_expires TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github ON users(github_id);
 CREATE INDEX IF NOT EXISTS idx_users_tg_code ON users(telegram_link_code);
-ALTER TABLE digests ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ
+ALTER TABLE digests ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS tavily_cache (
+  key TEXT PRIMARY KEY,
+  results JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS tavily_spend (
+  day DATE PRIMARY KEY,
+  credits INTEGER NOT NULL DEFAULT 0
+)
 `;

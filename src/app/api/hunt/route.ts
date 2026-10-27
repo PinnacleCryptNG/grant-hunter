@@ -1,4 +1,5 @@
 import { after, NextResponse } from "next/server";
+import { budgetConfig, budgetMessage, canSpend } from "@/lib/budget";
 import { one } from "@/lib/db";
 import { runHunt, startHunt } from "@/lib/hunt";
 import { llmConfigured } from "@/lib/llm";
@@ -25,6 +26,8 @@ export async function POST(req: Request) {
     [uid],
   );
   if (running) return NextResponse.json({ huntId: running.id }, { status: 202 });
+  const credits = await canSpend(budgetConfig().huntCost);
+  if (!credits.ok) return NextResponse.json({ error: budgetMessage(credits.budget) }, { status: 429 });
   const limited = await guard(req, uid, "hunt");
   if (limited) return limited;
   const huntId = await startHunt(uid, "manual");

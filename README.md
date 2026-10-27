@@ -47,7 +47,8 @@ On first use the server reads Token Factory's `GET /v1/models` and picks, per ti
 - **Agent trace:** every Nemotron and Tavily call is logged to `agent_steps` (operation, model, tokens, time, success) by `src/lib/trace.ts`. Each opportunity page shows the calls made for it.
 - **Structured output:** extraction, scoring and search planning send a strict JSON schema (`src/lib/schemas.ts`) as `response_format: json_schema`. If Token Factory or the model rejects it, `chatJson` falls back to JSON mode, then to plain text, and remembers which models don't support it.
 - **Background hunts:** `POST /api/hunt` creates a `hunts` row and runs the hunt after responding; the dashboard polls `GET /api/hunt?id=` for live stage and counts. The daily cron starts a separate `/api/cron/hunt` call per user, each with its own time limit, and retries once.
-- **Rate limits:** hunts and Nemotron Ultra/Super requests are capped per visitor, per IP and site-wide per day, with counters in Postgres (`src/lib/ratelimit.ts`). Defaults: 4 hunts/hour per visitor, 8 per IP, 200/day site-wide; 20 AI requests/hour per visitor, 40 per IP, 1000/day. Override with `HUNT_LIMIT_PER_USER_HOUR`, `HUNT_LIMIT_PER_IP_HOUR`, `HUNT_LIMIT_PER_DAY`, `LLM_LIMIT_PER_USER_HOUR`, `LLM_LIMIT_PER_IP_HOUR`, `LLM_LIMIT_PER_DAY`.
+- **Tavily credit budget** (`src/lib/budget.ts`): every Tavily response is requested with `include_usage`, and the credits it cost go into a daily ledger in Postgres. A hunt only starts if the month's allowance still has room: an even daily share of `TAVILY_MONTHLY_BUDGET` (default 900) plus `TAVILY_DAILY_BURST` (default 120), never more than the account's own remaining credits from Tavily's `/usage` endpoint minus `TAVILY_ACCOUNT_RESERVE` (default 40). Identical searches are reused for 12 hours and grant-hub crawls for 7 days, at no cost. Domain-filtered listing searches use basic depth (1 credit) and open-web searches use advanced (2). A fresh hunt costs about 13 credits; the daily job sends the digest every day but only hunts every `CRON_HUNT_EVERY_DAYS` (default 3), for up to `CRON_MAX_USERS` (default 10). `/api/status` shows the month's spend.
+- **Rate limits:** hunts and Nemotron Ultra/Super requests are capped per visitor, per IP and site-wide per day, with counters in Postgres (`src/lib/ratelimit.ts`). Defaults: 4 hunts/hour per visitor, 8 per IP, 40/day site-wide; 20 AI requests/hour per visitor, 40 per IP, 1000/day. Override with `HUNT_LIMIT_PER_USER_HOUR`, `HUNT_LIMIT_PER_IP_HOUR`, `HUNT_LIMIT_PER_DAY`, `LLM_LIMIT_PER_USER_HOUR`, `LLM_LIMIT_PER_IP_HOUR`, `LLM_LIMIT_PER_DAY`.
 
 ### Memory, re-checks and grant-hub crawling
 
@@ -109,7 +110,7 @@ The deployed app always uses Nebius Token Factory. GitHub Actions (`.github/work
 1. Import the repo in Vercel (framework: Next.js).
 2. Add a database: Vercel → Storage → Create Database → Neon. This injects `DATABASE_URL`. Tables are created automatically on first request.
 3. Set env vars: `NEBIUS_API_KEY`, `TAVILY_API_KEY`, `CRON_SECRET` (any random string).
-4. Deploy. `vercel.json` schedules `GET /api/cron` daily at 06:00 UTC: for each user active in the last 7 days with daily hunting on and a filled-in profile (up to `CRON_MAX_USERS`, default 25), it starts a separate hunt + digest run.
+4. Deploy. `vercel.json` schedules `GET /api/cron` daily at 06:00 UTC: for each user active in the last 7 days with daily hunting on and a filled-in profile (up to `CRON_MAX_USERS`, default 10), it starts a separate run that re-checks saved opportunities and sends the digest, and hunts again if the last hunt is at least `CRON_HUNT_EVERY_DAYS` old and Tavily credits allow.
 
 ## API
 

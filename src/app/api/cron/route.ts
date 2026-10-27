@@ -7,7 +7,7 @@ import { getProfile } from "@/lib/user";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const MAX_USERS = Number(process.env.CRON_MAX_USERS) || 25;
+const MAX_USERS = Number(process.env.CRON_MAX_USERS) || 10;
 
 /**
  * Daily schedule. Vercel Cron calls this with `Authorization: Bearer $CRON_SECRET`; it fans out one

@@ -100,10 +100,10 @@ async function plannedQueries(p: Profile): Promise<HuntQuery[]> {
       schema: PLAN_SCHEMA,
       maxTokens: 400,
       temperature: 0.4,
-      system: "You write web search queries that find currently OPEN grants, bounties, hackathons and creator contests for one person. Return JSON {\"queries\": [3 short search queries]}.",
+      system: "You write web search queries that find currently OPEN grants, bounties, hackathons and creator contests for one person. Return JSON {\"queries\": [2 short search queries]}.",
       user: `Year: ${new Date().getFullYear()}. Skills: ${p.skills.join(", ")}. Ecosystems: ${p.ecosystems.join(", ")}. Interests: ${p.interests.join(", ")}. Country: ${p.country}.`,
     });
-    return (data.queries ?? []).filter((q) => typeof q === "string").slice(0, 3).map((q) => ({ query: q, source: "Agent-planned", excludeDomains: NOISY_DOMAINS, timeRange: "month" as const }));
+    return (data.queries ?? []).filter((q) => typeof q === "string").slice(0, 2).map((q) => ({ query: q, source: "Agent-planned", excludeDomains: NOISY_DOMAINS, timeRange: "month" as const }));
   } catch {
     return [];
   }
@@ -196,7 +196,7 @@ async function hunt(userId: string, huntId: number, maxNew: number) {
   stats.queries += hubs.length;
   const [searched, crawled] = await Promise.all([
     pool(queries, 5, async (q) => {
-      const results = await tavilySearch({ query: q.query, includeDomains: q.includeDomains, excludeDomains: q.excludeDomains, maxResults: 5, timeRange: q.timeRange });
+      const results = await tavilySearch({ query: q.query, includeDomains: q.includeDomains, excludeDomains: q.excludeDomains, maxResults: 5, timeRange: q.timeRange, depth: q.includeDomains?.length ? "basic" : "advanced" });
       return results.map((r) => ({ ...r, q }));
     }),
     // Big ecosystem grant sites list programs on sub-pages that search rarely surfaces.

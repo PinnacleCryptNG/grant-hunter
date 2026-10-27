@@ -18,7 +18,7 @@ export function limitsFor(action: Action, uid: string, ip: string, env: Record<s
     return [
       { key: `hunt:u:${uid}`, max: num(env.HUNT_LIMIT_PER_USER_HOUR, 4), windowSec: HOUR, scope: "you" },
       { key: `hunt:ip:${ip}`, max: num(env.HUNT_LIMIT_PER_IP_HOUR, 8), windowSec: HOUR, scope: "network" },
-      { key: "hunt:site", max: num(env.HUNT_LIMIT_PER_DAY, 200), windowSec: DAY, scope: "site" },
+      { key: "hunt:site", max: num(env.HUNT_LIMIT_PER_DAY, 40), windowSec: DAY, scope: "site" },
     ];
   return [
     { key: `llm:u:${uid}`, max: num(env.LLM_LIMIT_PER_USER_HOUR, 20), windowSec: HOUR, scope: "you" },
