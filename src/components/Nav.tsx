@@ -15,7 +15,7 @@ const items = [
 export function Logo() {
   return (
     <span className="group flex items-center gap-2.5 font-display text-[17px] font-semibold tracking-tight text-fg">
-      <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-lime text-night shadow-[0_0_24px_-4px_rgba(198,244,50,0.6)]">
+      <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-lime text-night shadow-[0_0_24px_-4px_rgba(12,17,27,0.6)]">
         <Crosshair className="h-[18px] w-[18px] transition-transform duration-700 group-hover:rotate-90" strokeWidth={2.4} />
       </span>
       Grant Hunter

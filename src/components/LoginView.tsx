@@ -37,7 +37,7 @@ export function LoginView() {
         </div>
       ) : (
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-          <a href="/api/auth/github" aria-disabled={me ? !me.available.github : undefined} className={`inline-flex items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-lime px-6 py-3 text-[15px] font-semibold text-night shadow-[0_0_32px_-8px_rgba(198,244,50,0.6)] transition hover:bg-lime-soft ${me && !me.available.github ? "pointer-events-none opacity-50" : ""}`}>
+          <a href="/api/auth/github" aria-disabled={me ? !me.available.github : undefined} className={`inline-flex items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-lime px-6 py-3 text-[15px] font-semibold text-night shadow-[0_0_32px_-8px_rgba(12,17,27,0.6)] transition hover:bg-lime-soft ${me && !me.available.github ? "pointer-events-none opacity-50" : ""}`}>
             <Github className="h-5 w-5" /> Continue with GitHub
           </a>
           <Link href="/dashboard" className="text-center text-sm text-fg/50 transition hover:text-fg">or keep going without an account</Link>

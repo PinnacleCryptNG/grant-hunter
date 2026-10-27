@@ -1,6 +1,6 @@
 export function scoreTone(score: number | null) {
   if (score === null) return { ring: "stroke-white/20", text: "text-fg/50", glow: "" };
-  if (score >= 75) return { ring: "stroke-lime", text: "text-lime", glow: "drop-shadow-[0_0_8px_rgba(198,244,50,0.55)]" };
+  if (score >= 75) return { ring: "stroke-lime", text: "text-lime", glow: "drop-shadow-[0_0_8px_rgba(12,17,27,0.55)]" };
   if (score >= 50) return { ring: "stroke-amber-400", text: "text-amber-300", glow: "" };
   return { ring: "stroke-rose-400", text: "text-rose-300", glow: "" };
 }

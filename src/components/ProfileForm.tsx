@@ -200,7 +200,7 @@ export function ProfileForm() {
       )}
 
       <div className="sticky bottom-20 z-10 sm:bottom-4">
-        <button disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime px-4 py-3 text-sm font-semibold text-night shadow-[0_0_30px_-6px_rgba(198,244,50,0.45)] transition hover:bg-lime-soft disabled:opacity-60">
+        <button disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime px-4 py-3 text-sm font-semibold text-night shadow-[0_0_30px_-6px_rgba(12,17,27,0.45)] transition hover:bg-lime-soft disabled:opacity-60">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4 text-lime" /> : null}
           {saving ? "Saving…" : saved ? "Saved" : "Save profile"}
         </button>

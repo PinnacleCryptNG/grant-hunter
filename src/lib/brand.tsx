@@ -1,7 +1,7 @@
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://grant-hunter-omega.vercel.app";
 export const SITE_NAME = "Grant Hunter";
-export const LIME = "#c6f432";
-export const NIGHT = "#07090e";
+export const LIME = "#0c111b";
+export const NIGHT = "#f6f7f9";
 
 export function Mark({ size, stroke = NIGHT }: { size: number; stroke?: string }) {
   return (

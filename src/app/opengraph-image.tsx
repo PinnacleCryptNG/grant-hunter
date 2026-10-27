@@ -14,12 +14,12 @@ export default async function OpengraphImage() {
   const rings = [560, 420, 280, 140];
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", background: NIGHT, color: "#e9edf5", position: "relative", fontFamily: "Display" }}>
+      <div style={{ width: "100%", height: "100%", display: "flex", background: NIGHT, color: "#0c111b", position: "relative", fontFamily: "Display" }}>
         {rings.map((d) => (
-          <div key={d} style={{ position: "absolute", left: 900 - d / 2, top: 315 - d / 2, width: d, height: d, borderRadius: d, border: `1.5px solid rgba(198,244,50,${0.08 + (560 - d) / 2400})` }} />
+          <div key={d} style={{ position: "absolute", left: 900 - d / 2, top: 315 - d / 2, width: d, height: d, borderRadius: d, border: `1.5px solid rgba(12,17,27,${0.08 + (560 - d) / 2400})` }} />
         ))}
-        <div style={{ position: "absolute", left: 900, top: 35, width: 1.5, height: 560, background: "rgba(198,244,50,0.08)" }} />
-        <div style={{ position: "absolute", left: 620, top: 315, width: 560, height: 1.5, background: "rgba(198,244,50,0.08)" }} />
+        <div style={{ position: "absolute", left: 900, top: 35, width: 1.5, height: 560, background: "rgba(12,17,27,0.08)" }} />
+        <div style={{ position: "absolute", left: 620, top: 315, width: 560, height: 1.5, background: "rgba(12,17,27,0.08)" }} />
         <svg width="1200" height="630" viewBox="0 0 1200 630" style={{ position: "absolute", left: 0, top: 0 }}>
           <defs>
             <linearGradient id="beam" x1="900" y1="315" x2="1150" y2="160" gradientUnits="userSpaceOnUse">
@@ -33,7 +33,7 @@ export default async function OpengraphImage() {
         {[[1020, 200], [770, 420], [1080, 400], [820, 190]].map(([x, y], i) => (
           <div key={i} style={{ position: "absolute", left: x - 6, top: y - 6, width: 12, height: 12, borderRadius: 12, background: LIME, boxShadow: `0 0 24px ${LIME}` }} />
         ))}
-        <div style={{ position: "absolute", left: 860, top: 275, width: 80, height: 80, borderRadius: 22, background: LIME, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 60px rgba(198,244,50,0.55)" }}>
+        <div style={{ position: "absolute", left: 860, top: 275, width: 80, height: 80, borderRadius: 22, background: LIME, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 60px rgba(12,17,27,0.55)" }}>
           <Mark size={46} />
         </div>
 
@@ -48,7 +48,7 @@ export default async function OpengraphImage() {
             <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1, letterSpacing: -2 }}>{TITLE}</div>
             <div style={{ fontSize: 88, fontFamily: "Serif", fontStyle: "italic", color: LIME, lineHeight: 1.1, marginTop: 8 }}>{ITALIC}</div>
           </div>
-          <div style={{ fontSize: 24, color: "rgba(233,237,245,0.55)" }}>{KINDS}</div>
+          <div style={{ fontSize: 24, color: "rgba(12,17,27,0.55)" }}>{KINDS}</div>
         </div>
       </div>
     ),

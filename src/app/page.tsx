@@ -31,7 +31,7 @@ export default function Landing() {
   return (
     <div className="overflow-x-clip">
       <section className="relative isolate pt-28 sm:pt-32">
-        <div aria-hidden className="absolute right-[-20%] top-0 -z-10 h-[52rem] w-[52rem] rounded-full bg-[radial-gradient(closest-side,rgba(198,244,50,0.09),transparent)] lg:right-[-8%]" />
+        <div aria-hidden className="absolute right-[-20%] top-0 -z-10 h-[52rem] w-[52rem] rounded-full bg-[radial-gradient(closest-side,rgba(12,17,27,0.09),transparent)] lg:right-[-8%]" />
         <div className="mx-auto grid max-w-6xl items-center gap-6 px-4 lg:grid-cols-[1fr_1.1fr] lg:gap-0">
           <div className="animate-rise">
             <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-fg/45">A personal AI agent for builders</p>

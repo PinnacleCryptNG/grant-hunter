@@ -5,12 +5,32 @@
   --font-display: var(--font-display-face), var(--font-inter), ui-sans-serif, sans-serif;
   --font-serif: var(--font-serif-face), ui-serif, Georgia, serif;
   --font-mono: var(--font-mono-face), ui-monospace, SFMono-Regular, monospace;
-  --color-night: #07090e;
-  --color-surface: #0d1119;
-  --color-surface-2: #131926;
-  --color-fg: #e9edf5;
-  --color-lime: #c6f432;
-  --color-lime-soft: #dcff7a;
+  --color-night: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #eceff3;
+  --color-fg: #0c111b;
+  --color-lime: #0c111b;
+  --color-white: #0c111b;
+  --color-amber-300: #b45309;
+  --color-rose-300: #be123c;
+  --color-rose-400: #e11d48;
+  --color-amber-400: #d97706;
+  --color-lime-50: #2a3140;
+  --color-lime-100: #2a3140;
+  --color-lime-200: #2a3140;
+  --color-lime-300: #2a3140;
+  --color-lime-400: #0c111b;
+  --color-lime-500: #0c111b;
+  --color-lime-600: #0c111b;
+  --color-lime-700: #0c111b;
+  --color-sky-200: #0369a1;
+  --color-sky-300: #0369a1;
+  --color-violet-200: #6d28d9;
+  --color-violet-300: #6d28d9;
+  --color-teal-200: #0f766e;
+  --color-amber-200: #b45309;
+  --color-rose-200: #be123c;
+  --color-lime-soft: #2a3140;
   --animate-rise: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-sweep: sweep 5s linear infinite;
   --animate-marquee: marquee 38s linear infinite;
@@ -24,7 +44,7 @@
 }
 
 @layer base {
-  html { color-scheme: dark; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+  html { color-scheme: light; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
   body { background: var(--color-night); }
   h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.025em; }
   ::selection { background: var(--color-lime); color: var(--color-night); }
@@ -52,4 +72,4 @@ body::before {
 .prose-draft ul { list-style: disc; padding-left: 1.25rem; margin: 0.5em 0; }
 .prose-draft ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5em 0; }
 .prose-draft a { color: var(--color-lime); text-decoration: underline; }
-.prose-draft strong { font-weight: 600; color: #fff; }
+.prose-draft strong { font-weight: 600; color: var(--color-fg); }

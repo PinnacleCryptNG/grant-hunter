@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const LIME = "198,244,50";
+const LIME = "12,17,27";
 const TAU = Math.PI * 2;
 
 type Target = { a: number; r: number; kind?: string; seed: number };
@@ -112,7 +112,7 @@ export function Radar({ speed = 1, labels = true, core = true, className = "" }:
           ctx.lineTo(cx + Math.cos(a) * (R + len), cy + Math.sin(a) * (R + len));
           ctx.stroke();
           if (major) {
-            ctx.fillStyle = "rgba(233,237,245,0.3)";
+            ctx.fillStyle = "rgba(12,17,27,0.3)";
             ctx.font = `500 ${fs * 0.9}px ${mono}`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -221,7 +221,7 @@ export function Radar({ speed = 1, labels = true, core = true, className = "" }:
           ctx.textAlign = right ? "left" : "right";
           ctx.textBaseline = "middle";
           ctx.font = `600 ${fs}px ${mono}`;
-          ctx.fillStyle = `rgba(233,237,245,${alpha})`;
+          ctx.fillStyle = `rgba(12,17,27,${alpha})`;
           ctx.fillText(tg.kind, lx + (right ? 5 : -5), ey - fs * 0.55);
           const bearing = String(Math.round((((tg.a + Math.PI / 2) % TAU) / TAU) * 360)).padStart(3, "0");
           ctx.font = `400 ${fs * 0.85}px ${mono}`;
@@ -267,7 +267,7 @@ export function Radar({ speed = 1, labels = true, core = true, className = "" }:
     <div ref={wrap} className={`relative aspect-square w-full ${className}`}>
       <div ref={tilt} className="absolute inset-0 transition-transform duration-500 ease-out will-change-transform">
         <canvas ref={cv} aria-hidden className="absolute inset-0 h-full w-full" />
-        {core && <div className="absolute left-1/2 top-1/2 grid h-[11%] w-[11%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[28%] bg-lime text-night shadow-[0_0_50px_rgba(198,244,50,0.55)]">
+        {core && <div className="absolute left-1/2 top-1/2 grid h-[11%] w-[11%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[28%] bg-lime text-night shadow-[0_0_50px_rgba(12,17,27,0.55)]">
           <svg viewBox="0 0 24 24" className="h-1/2 w-1/2" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M22 12h-4M6 12H2M12 6V2M12 22v-4" /></svg>
         </div>}
       </div>
