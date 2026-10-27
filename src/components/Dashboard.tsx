@@ -220,7 +220,7 @@ export function Dashboard() {
           )}
         </div>
       ) : (
-        <ul className="space-y-4">
+        <ul className="grid gap-5 md:grid-cols-2">
           {visible.map((o) => <OpportunityCard key={o.id} o={o} tz={tz} onStatus={(st) => setItemStatus(o.id, st)} />)}
         </ul>
       )}
