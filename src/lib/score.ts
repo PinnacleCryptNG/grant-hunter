@@ -32,8 +32,6 @@ function profileBrief(p: Profile) {
     headline: p.headline,
     bio: p.bio,
     skills: p.skills,
-    ecosystems: p.ecosystems,
-    interests: p.interests,
     country: p.country,
     hourlyRateUsd: p.hourlyRateUsd,
     minRewardUsd: p.minRewardUsd,
@@ -77,7 +75,7 @@ function opportunityBrief(x: Extracted) {
 
 const SYSTEM = `You are the scoring module of Grant Hunter, a personal agent that finds grants, bounties, hackathons and contests for one user.
 Score how good a fit the opportunity is for this user from 0 to 100.
-Consider: skill/ecosystem match, reward vs the user's minimum reward and hourly rate, payout method vs preferences, country eligibility, time left, clarity of terms, and the user's memory (things they liked, applied to, or rejected and why). Penalise opportunities similar to rejected ones and favour ones similar to saved or applied ones; most_similar_past_decisions (by embedding similarity, 1 = identical) shows the closest matches.
+Consider: skill match, reward vs the user's minimum reward and hourly rate, payout method vs preferences, country eligibility, time left, clarity of terms, and the user's memory (things they liked, applied to, or rejected and why). Penalise opportunities similar to rejected ones and favour ones similar to saved or applied ones; most_similar_past_decisions (by embedding similarity, 1 = identical) shows the closest matches.
 Treat "unknown" fields as unknown: do not assume they are favourable. Never invent facts.
 Flag extra risks only when supported by the data: country_not_eligible, sponsor_token, entry_fee, unclear_terms, low_reward, skill_gap, short_deadline.
 Return JSON: {"score": integer 0-100, "verdict": string (one sentence), "reasons": [{"type":"plus"|"minus","text": string}] (3-6 items), "risks": [{"code": string, "label": string, "severity": "high"|"medium"|"low", "detail": string}]}`;

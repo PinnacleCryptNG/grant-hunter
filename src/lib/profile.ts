@@ -5,8 +5,6 @@ export const EMPTY_PROFILE: Profile = {
   headline: "",
   bio: "",
   skills: [],
-  ecosystems: [],
-  interests: [],
   links: [],
   portfolio: [],
   country: "",
@@ -18,7 +16,7 @@ export const EMPTY_PROFILE: Profile = {
   huntSchedule: "daily",
 };
 
-/** A hunt needs something to search for: at least one skill, interest or ecosystem. */
-export function hasProfileSignal(p: Pick<Profile, "skills" | "interests" | "ecosystems">) {
-  return p.skills.length + p.interests.length + p.ecosystems.length > 0;
+/** A hunt needs something to search for: at least one skill. */
+export function hasProfileSignal(p: Pick<Profile, "skills">) {
+  return p.skills.length > 0;
 }

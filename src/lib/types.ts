@@ -3,8 +3,6 @@ export type Profile = {
   headline: string;
   bio: string;
   skills: string[];
-  ecosystems: string[];
-  interests: string[];
   links: { label: string; url: string }[];
   portfolio: { title: string; url: string; description: string }[];
   country: string;

@@ -96,7 +96,7 @@ export function Dashboard() {
 
   async function hunt() {
     if (needsProfile) {
-      setMessage("Fill in your profile first: add at least one skill, interest or ecosystem.");
+      setMessage("Fill in your profile first: add at least one skill.");
       return;
     }
     setMessage(null);
@@ -208,7 +208,7 @@ export function Dashboard() {
           <h2 className="mt-4 text-lg font-semibold">{needsProfile ? "First, tell the agent who you are" : items.length ? "Nothing in this view" : "No matches yet"}</h2>
           <p className="mx-auto mt-1 max-w-sm text-sm text-fg/50">
             {needsProfile
-              ? "Add your skills, ecosystems and country so it knows what to look for and what you're eligible for."
+              ? "Add your skills and country so it knows what to look for and what you're eligible for."
               : items.length
                 ? "Try another tab, or tick “Show closed”."
                 : "Press Hunt now and the agent will search the web for opportunities that fit your profile."}

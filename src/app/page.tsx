@@ -7,7 +7,7 @@ import { Logo, REPO_URL } from "@/components/Nav";
 const SOURCES = ["Superteam Earn", "Devpost", "Gitcoin", "X announcements", "Ecosystem grants", "Creator contests", "Solana", "Base", "Open-source AI"];
 
 const STEPS = [
-  { title: "Tell it who you are", text: "Skills, ecosystems, portfolio, country and rates. It also remembers what you save, apply to and pass on." },
+  { title: "Tell it who you are", text: "Skills, portfolio, country and rates. It also remembers what you save, apply to and pass on." },
   { title: "It hunts every day", text: "Tavily searches Superteam Earn, Devpost, Gitcoin, X and ecosystem grant pages, and reads every page in full." },
   { title: "It reads the fine print", text: "Nemotron pulls out reward, deadline, eligibility and payout. Each fact needs a quote from the page, or it's marked unknown." },
   { title: "You approve the draft", text: "Nemotron Ultra writes the application from your real portfolio. Nothing is sent. You edit it, approve it and copy it." },

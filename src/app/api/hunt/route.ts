@@ -20,7 +20,7 @@ type HuntRow = { id: number; status: string; progress: unknown; stats: unknown; 
 export async function POST(req: Request) {
   if (!llmConfigured() || !tavilyConfigured()) return NextResponse.json({ error: "NEBIUS_API_KEY and TAVILY_API_KEY must be set on the server." }, { status: 503 });
   const uid = await currentUserId();
-  if (!hasProfileSignal(await getProfile(uid))) return NextResponse.json({ error: "Fill in your profile first: add at least one skill, interest or ecosystem so the agent knows what to hunt for." }, { status: 400 });
+  if (!hasProfileSignal(await getProfile(uid))) return NextResponse.json({ error: "Fill in your profile first: add at least one skill so the agent knows what to hunt for." }, { status: 400 });
   const running = await one<{ id: number }>(
     "SELECT id FROM hunts WHERE user_id = $1 AND status = 'running' AND created_at > now() - interval '6 minutes' ORDER BY id DESC LIMIT 1",
     [uid],

@@ -13,7 +13,7 @@ Built for the **Nebius x NVIDIA Global AI Hackathon — Personal AI track**.
 ## Try it in 60 seconds
 
 1. Open **https://grant-hunter-omega.vercel.app** and click **Start hunting**. No account needed.
-2. On **Profile**, tap a few skills, ecosystems and interests (e.g. TypeScript, Solana, AI), pick your country and press **Save profile**.
+2. On **Profile**, tap a few skills (e.g. TypeScript, Rust, Technical writing), pick your country and press **Save profile**.
 3. Go to **Hunt** and press **Hunt now**. The agent searches, reads and verifies pages live; a hunt takes about 20-40 seconds.
 4. Open any opportunity: verified terms with their source quotes, fit reasons and risks. Under **Your next move**, pick a draft (build plan for a hackathon, application for a grant, first draft for a writing contest) and press **Write**.
 5. **Today** shows your top five. Optionally connect Telegram on the profile to get them every morning.
@@ -24,7 +24,7 @@ Built for the **Nebius x NVIDIA Global AI Hackathon — Personal AI track**.
 
 ## What it does
 
-1. **Profile & memory.** You fill in skills, links, portfolio, country, timezone, rates, ecosystems and payout preferences. It is stored in Postgres. Every opportunity you save, apply to or reject (with an optional note such as "paid in an illiquid token") is remembered and fed back into future scores and drafts.
+1. **Profile & memory.** You fill in skills, links, portfolio, country, timezone, rates and payout preferences. It is stored in Postgres. Every opportunity you save, apply to or reject (with an optional note such as "paid in an illiquid token") is remembered and fed back into future scores and drafts.
 2. **Hunt.** On demand (**Hunt now**) and daily (Vercel Cron), the agent runs Tavily searches across Superteam Earn, Devpost, Gitcoin, X announcements, ecosystem grant pages and creator contests, plus 2 extra queries that Nemotron Nano plans from your profile. When a result is a listing page (a directory, a Superteam or Devpost index, a "top hackathons" roundup), the agent follows up to 8 of its links to the individual opportunities and reads those too.
 3. **Verify & score.** Nemotron reads each page and extracts reward, deadline, eligibility, eligible countries, payout method, entry fee and how to apply. Every value must come with a verbatim quote, and the server checks that the quote is really on the page. If it isn't, the field becomes `unknown`. Deadlines are stored in UTC and shown in your timezone. Nemotron then scores fit 0-100 with plus/minus reasons and flags risks: country not eligible, paid in the sponsor's own token, entry fees, unclear terms, deadline passed. Listing pages are not scored themselves (their links are followed instead), and closed opportunities are dropped.
 4. **Draft.** On any opportunity, Nemotron Ultra writes a draft that matches the kind of work, from your profile and portfolio only: a build plan and submission write-up for hackathons and build bounties, an application for grants, a first draft or outline for writing, a video script, a design brief, or an X thread for social contests. The server refuses draft types that don't fit the opportunity. Nothing is submitted: you edit it, approve it, then copy it. Nemotron Ultra can also run a **deep fit analysis** (apply / maybe / skip, effort vs reward, what to verify).
@@ -69,7 +69,7 @@ On first use the server reads Token Factory's `GET /v1/models` and picks, per ti
 
 - **Embedding memory:** when scoring, drafting or analysing an opportunity, `src/lib/memory.ts` embeds it and the user's past saved, applied and rejected opportunities through Token Factory's embeddings API (an NVIDIA embedding model if listed, else Qwen3-Embedding / BGE; override with `NEBIUS_EMBED_MODEL`). The three closest past decisions, with their similarity and rejection notes, go into the Nemotron prompt, so "less like that one" works by meaning rather than exact title. Embeddings are cached on the opportunity; if the call fails, scoring uses the title lists.
 - **Re-checking saved opportunities:** before the daily digest, `src/lib/recheck.ts` re-reads up to 5 saved opportunities (each at most once a day) with Tavily Extract and the same Nemotron extraction and evidence check, then updates the deadline and closed status. The detail page shows what changed ("Re-checked: deadline now Nov 8").
-- **Tavily Crawl of grant hubs:** if the profile lists Solana, Ethereum, Arbitrum or Sui, the hunt also crawls that ecosystem's grant hub one level deep (`tavilyCrawl`, with instructions to keep pages about a single program or funding round), alongside the searches.
+- **Tavily Crawl of grant hubs:** if the profile's skills, headline or bio mention Solana, Ethereum (or Solidity), Arbitrum or Sui, the hunt also crawls that ecosystem's grant hub one level deep (`tavilyCrawl`, with instructions to keep pages about a single program or funding round), alongside the searches.
 
 ### Optional sign-in and Telegram delivery
 
@@ -116,7 +116,7 @@ npm run dev                  # http://localhost:3000
 
 Without `DATABASE_URL`, data is kept in an embedded Postgres (PGlite) under `./.data`. Open the app, fill in your profile under **Profile**, then press **Hunt now**.
 
-Each browser gets its own anonymous user (cookie) with an empty profile. Hunting unlocks once the profile has at least one skill, interest or ecosystem.
+Each browser gets its own anonymous user (cookie) with an empty profile. Hunting unlocks once the profile has at least one skill.
 
 ## Tests
 

@@ -46,9 +46,9 @@ describe("re-check", () => {
 });
 
 describe("grant hub crawl", () => {
-  it("crawls hubs that match the profile's ecosystems", () => {
-    const p = { ecosystems: ["Solana", "Ethereum", "Sui"] } as Profile;
+  it("crawls hubs that match the profile's skills and bio", () => {
+    const p = { skills: ["Solidity", "Rust"], headline: "Solana builder", bio: "Shipping on Sui" } as Profile;
     expect(grantHubsFor(p).map((h) => h.name)).toEqual(["Solana", "Ethereum"]);
-    expect(grantHubsFor({ ecosystems: ["Cardano"] } as Profile)).toEqual([]);
+    expect(grantHubsFor({ skills: ["Haskell"], headline: "Cardano dev", bio: "" } as Profile)).toEqual([]);
   });
 });

@@ -22,8 +22,6 @@ function sanitize(b: Partial<Profile>): Profile {
     headline: str(b.headline, 200),
     bio: str(b.bio, 2000),
     skills: list(b.skills),
-    ecosystems: list(b.ecosystems),
-    interests: list(b.interests),
     links: (Array.isArray(b.links) ? b.links : []).filter((l) => l && l.url).slice(0, 12).map((l) => ({ label: str(l.label, 40), url: str(l.url, 300) })),
     portfolio: (Array.isArray(b.portfolio) ? b.portfolio : []).filter((p) => p && (p.title || p.url)).slice(0, 12).map((p) => ({ title: str(p.title, 120), url: str(p.url, 300), description: str(p.description, 500) })),
     country: str(b.country, 80),

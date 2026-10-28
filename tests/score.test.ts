@@ -5,7 +5,7 @@ vi.mock("@/lib/llm", () => ({ chatJson: vi.fn(async () => ({ data: { score: 95, 
 import { ruleRisks, scoreOpportunity } from "@/lib/score";
 import { EMPTY_PROFILE } from "@/lib/profile";
 
-const PROFILE = { ...EMPTY_PROFILE, name: "Test User", skills: ["TypeScript"], ecosystems: ["Solana"], interests: ["AI agents"], country: "Kenya" };
+const PROFILE = { ...EMPTY_PROFILE, name: "Test User", skills: ["TypeScript"], country: "Kenya" };
 import type { Extracted } from "@/lib/types";
 
 const U = { value: "unknown", evidence: null };

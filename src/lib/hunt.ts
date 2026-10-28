@@ -33,17 +33,17 @@ const NOISY_DOMAINS = ["instagram.com", "facebook.com", "tiktok.com", "youtube.c
 const SOURCES: { source: string; domains: string[]; timeRange?: HuntQuery["timeRange"]; build: (p: Profile) => string }[] = [
   // Listing sites keep pages live until the deadline, so no recency filter there.
   { source: "Superteam Earn", domains: ["superteam.fun", "earn.superteam.fun"], build: (p) => `Superteam Earn listing bounty ${p.skills.slice(0, 2).join(" ")}` },
-  { source: "Devpost", domains: ["devpost.com"], build: (p) => `online hackathon open for submissions ${p.interests[0] ?? "AI"} prizes` },
+  { source: "Devpost", domains: ["devpost.com"], build: (p) => `online hackathon open for submissions ${p.skills[0] ?? "AI"} prizes` },
   { source: "Gitcoin", domains: ["gitcoin.co", "grants.gitcoin.co", "explorer.gitcoin.co"], timeRange: "month", build: () => "Gitcoin grants round open applications" },
-  { source: "X announcements", domains: ["x.com", "twitter.com"], timeRange: "month", build: (p) => `announcing grant program OR bounty OR hackathon ${p.ecosystems.slice(0, 2).join(" OR ")} apply` },
-  { source: "Ecosystem grants", domains: [], timeRange: "month", build: (p) => `${p.ecosystems[0] ?? "open source"} ecosystem grants program apply now ${new Date().getFullYear()}` },
-  { source: "Creator contests", domains: [], timeRange: "month", build: (p) => `creator contest open submissions prize ${p.interests.slice(0, 2).join(" ")} ${new Date().getFullYear()}` },
+  { source: "X announcements", domains: ["x.com", "twitter.com"], timeRange: "month", build: (p) => `announcing grant program OR bounty OR hackathon ${p.skills.slice(0, 2).join(" OR ")} apply` },
+  { source: "Open grants", domains: [], timeRange: "month", build: (p) => `${p.skills[0] ?? "open source"} grants program apply now ${new Date().getFullYear()}` },
+  { source: "Creator contests", domains: [], timeRange: "month", build: (p) => `creator contest open submissions prize ${p.skills.slice(0, 2).join(" ")} ${new Date().getFullYear()}` },
 ];
 
-/** Ecosystem grant hubs that Tavily Crawl can read (checked); matched against the profile's ecosystems. */
+/** Ecosystem grant hubs that Tavily Crawl can read (checked); matched against the profile's skills, headline and bio. */
 const GRANT_HUBS: { name: string; match: RegExp; url: string }[] = [
   { name: "Solana", match: /solana/i, url: "https://solana.org/grants-funding" },
-  { name: "Ethereum", match: /ethereum|\beth\b|evm/i, url: "https://esp.ethereum.foundation" },
+  { name: "Ethereum", match: /ethereum|\beth\b|evm|solidity/i, url: "https://esp.ethereum.foundation" },
   { name: "Arbitrum", match: /arbitrum/i, url: "https://arbitrum.foundation/grants" },
   { name: "Sui", match: /\bsui\b/i, url: "https://sui.io/grants-hub" },
 ];
@@ -52,7 +52,8 @@ const FOLLOW_MAX = 8;
 const CRAWL_INSTRUCTIONS = "Pages describing a single grant program, RFP or open funding round, with amounts, eligibility and how to apply";
 
 export function grantHubsFor(p: Profile, max = 2) {
-  return GRANT_HUBS.filter((h) => p.ecosystems.some((e) => h.match.test(e))).slice(0, max);
+  const text = [...p.skills, p.headline ?? "", p.bio ?? ""].join(" ");
+  return GRANT_HUBS.filter((h) => h.match.test(text)).slice(0, max);
 }
 
 export function baseQueries(p: Profile): HuntQuery[] {
@@ -141,7 +142,7 @@ async function plannedQueries(p: Profile): Promise<HuntQuery[]> {
       maxTokens: 400,
       temperature: 0.4,
       system: "You write web search queries that find currently OPEN grants, bounties, hackathons and creator contests for one person. Return JSON {\"queries\": [2 short search queries]}.",
-      user: `Year: ${new Date().getFullYear()}. Skills: ${p.skills.join(", ")}. Ecosystems: ${p.ecosystems.join(", ")}. Interests: ${p.interests.join(", ")}. Country: ${p.country}.`,
+      user: `Year: ${new Date().getFullYear()}. Skills: ${p.skills.join(", ")}. Headline: ${p.headline}. Country: ${p.country}.`,
     });
     return (data.queries ?? []).filter((q) => typeof q === "string").slice(0, 2).map((q) => ({ query: q, source: "Agent-planned", excludeDomains: NOISY_DOMAINS, timeRange: "month" as const }));
   } catch {

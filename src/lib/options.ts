@@ -6,9 +6,7 @@ export const SKILL_GROUPS: Record<string, string[]> = {
   Growth: ["Community", "Marketing", "Product management", "Research", "Business development", "Events"],
 };
 
-export const ECOSYSTEMS = ["Solana", "Ethereum", "Base", "Arbitrum", "Optimism", "Polygon", "Sui", "Aptos", "NEAR", "Starknet", "Avalanche", "Cosmos", "Polkadot", "TON", "Bitcoin", "Stellar", "NVIDIA", "OpenAI", "Google", "Microsoft", "AWS", "Hugging Face"];
 
-export const INTERESTS = ["AI agents", "DeFi", "Payments", "Stablecoins", "Consumer apps", "Gaming", "NFTs", "DePIN", "Infrastructure", "Developer tools", "Open source", "Security", "Privacy", "Education", "Social impact", "Climate", "Health", "Creator economy", "DAOs", "RWA"];
 
 export const PAYOUTS = ["USDC", "USDT", "Bank transfer", "PayPal", "SOL", "ETH", "Sponsor token", "Gift cards"];
 

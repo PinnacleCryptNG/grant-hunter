@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
-import { AVOID, ECOSYSTEMS, INTERESTS, PAYOUTS, SKILL_GROUPS, countryNames } from "@/lib/options";
+import { AVOID, PAYOUTS, SKILL_GROUPS, countryNames } from "@/lib/options";
 import type { Profile } from "@/lib/types";
 import { AccountPanel } from "./AccountPanel";
 
@@ -117,7 +117,7 @@ export function ProfileForm() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lime">Profile</p>
           <h1 className="mt-1.5 text-2xl font-semibold sm:text-3xl">Tell the agent who you are</h1>
-          <p className="mt-1.5 text-sm text-fg/50">Everything it hunts, scores and writes comes from this, so the more specific you are, the better the matches. Add at least one skill, interest or ecosystem to start. Saved to this browser, or to your GitHub account if you sign in.</p>
+          <p className="mt-1.5 text-sm text-fg/50">Everything it hunts, scores and writes comes from this, so the more specific you are, the better the matches. Add at least one skill to start. Saved to this browser, or to your GitHub account if you sign in.</p>
         </div>
       </div>
 
@@ -142,10 +142,8 @@ export function ProfileForm() {
         </div>
       </Section>
 
-      <Section title="Skills & focus" hint="Tap everything that applies. Missing something? Type it in.">
+      <Section title="Skills" hint="Tap everything that applies. Missing something? Type it in.">
         <Picker text="Skills"><ChipPicker value={p.skills} onChange={(v) => set("skills", v)} options={SKILL_GROUPS} /></Picker>
-        <Picker text="Ecosystems"><ChipPicker value={p.ecosystems} onChange={(v) => set("ecosystems", v)} options={ECOSYSTEMS} /></Picker>
-        <Picker text="Interests"><ChipPicker value={p.interests} onChange={(v) => set("interests", v)} options={INTERESTS} /></Picker>
       </Section>
 
       <Section title="Rates & preferences">
